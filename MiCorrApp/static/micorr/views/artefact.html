@@ -1,0 +1,56 @@
+<section>
+    <ol class="breadcrumb">
+        <li><a href="#">Home</a></li>
+        <li><a href="#/artefact/{{artefactName}}">{{artefactName}}</a></li>
+    </ol>
+
+    <div ng-controller="ModalAddStratigraphyCtrl">
+        <script type="text/ng-template" id="modalAddStratigraphy.html">
+            <div class="modal-header">
+                <h3 class="modal-title">Add a stratigraphy</h3>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div ng-controller="addStratigraphyCtrl">
+                        <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</alert>
+                    </div>
+                    <fieldset>
+                        <label>Name</label>
+                        <input type="text" placeholder="Stratigraphy1234" ng-model="strat">
+                        <span class="help-block">Type the name of of a stratigraphy to add</span>
+                    </fieldset>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="ok()">OK</button>
+                <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+            </div>
+        </script>
+
+        <button type="button" class="btn btn-primary" ng-click="open()">
+                <span class="glyphicon glyphicon glyphicon-plus" aria-hidden="true"></span>
+                Add a stratigraphy
+        </button>
+        <br/><br/>
+    </div>
+
+    <div>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <td>#</td>
+                    <td>Stratigraphy</td>
+                    <td>Edit</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat='strat in strats'>
+                    <td><strong>{{$index + 1}}</strong></td>
+                    <td><a href='#/artefact/{{artefactName}}/{{strat.name}}/'>{{strat.name}}</a></td>
+                    <td><a href='#/artefact/{{artefactName}}/{{strat.name}}/'><span class="glyphicon glyphicon glyphicon-pencil" aria-hidden="true"></span></a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
