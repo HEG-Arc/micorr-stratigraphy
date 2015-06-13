@@ -1,3 +1,12 @@
+/*
+ * MiCorrApp @ HE-ARC
+ *
+ * Version: 1
+ *
+ * Contient les services nécessaires à l'application
+ */
+
+// Contient toutes les requêtes vers le serveur
 angular.module('MiCorr').factory('MiCorrService', function ($http, $q) {
     return{
         sayHello: function(){
@@ -38,15 +47,49 @@ angular.module('MiCorr').factory('MiCorrService', function ($http, $q) {
                 console.log('Problème de connexion avec le serveur pour charger les caractéristiques');
                 alert('Erreur de chargement des caractéristiques');
             });
+        },
+        saveStratigraphy : function(data) {
+            return $http.get('json/save/' + data).error(function(){
+                console.log('Problème de connexion avec le serveur pour sauver la stratigraphie');
+                alert('Erreur de sauvegarde de la stratigraphie');
+            });
+        },
+        matchStratigraphy : function(data) {
+            return $http.get('json/match/' + data).error(function(){
+                console.log('Problème de connexion avec le serveur pour comparer la stratigraphie');
+                alert('Erreur de lors du match avec la stratigraphie');
+            });
+        },
+        deleteStratigraphy : function(data) {
+            return $http.get('json/deleteStratigraphy/' + data).error(function(){
+                console.log('Problème de connexion avec le serveur pour supprimer la stratigraphie');
+                alert('Erreur de suppression de la stratigraphie');
+            });
+        },
+        createArtefact : function(data) {
+            return $http.get('json/addartefact/' + data).error(function(){
+                console.log('Problème de connexion avec le serveur pour créer un artefact');
+                alert('Erreur de création de artefact');
+            });
+        },
+        deleteArtefact : function(data) {
+            return $http.get('json/deleteartefact/' + data).error(function(){
+                console.log('Problème de connexion avec le serveur pour supprimer un artefact');
+                alert('Erreur de suppression de artefact');
+            });
         }
     }
 });
 
+// Contient les données sur les strates qui seront échangées entre les différents contrôlleurs
 angular.module('MiCorr').factory('StrataData', function () {
-    var selectedStrata = 0;
+    var selectedStrata = 0;         // index de la strate sélectionnée par l'utilisateur
 
-    var rstratas         = [];
+    var rstratas         = [];      // Liste de toutes les strates pour la stratigraphie en cours
 
+    var listImages       = [];      // Liste de toutes les images raphaeljs pour la stratigraphie en cours
+
+    // Toutes les caractéristiques
     var shapeFamily      = [];
     var widthFamily      = [];
     var thicknessFamily  = [];
@@ -67,18 +110,45 @@ angular.module('MiCorr').factory('StrataData', function () {
     var cpcompositionFamily  = [];
     var cmcompositionFamily  = [];
     var mcompositionFamily   = [];
+    var cmlevelofcorrosionFamily = [];
     var cprimicrostructureFamily  = [];
     var mmicrostructureFamily     = [];
+
+    // Toutes les interfaces
     var interfaceprofileFamily    = [];
     var interfacetransitionFamily = [];
     var interfaceroughnessFamily  = [];
     var interfaceadherenceFamily  = [];
 
+    // Toutes les sous caractéristiques
+    var subcpcompositionFamily      = [];
+    var subsubcpcompositionFamily   = [];
+
+    var cpcompositionextensionFamily = [];
+    var cprimicrostructureaggregatecompositionFamily = [];
+    var cprimicrostructureaggregatecompositionextensionFamily = [];
+
+    var submmicrostructureFamily = [];
+    var subcprimicrostructureFamily = [];
+
+    var subcprimicrostructureaggregatecompositionFamily    = [];
+    var subsubcprimicrostructureaggregatecompositionFamily = [];
+
+    var subcmcompositionFamily = [];
+
+    var subcmLevelOfCorrosionFamily = [];
+
+    var submmicrostructureFamily = [];
+
     return {
         clear : function(){
             selectedStrata = 0;
             rstratas = new Array();
-            namesStratas = new Array();;
+            namesStratas = new Array();
+            listImages = new Array();
+        },
+        clearImages : function() {
+            listImages = new Array();
         },
         getCurrentStrata : function() {
             if (rstratas.length == 0)
@@ -97,13 +167,121 @@ angular.module('MiCorr').factory('StrataData', function () {
         pushOneStrata : function(strata) {
             rstratas.push(strata);
         },
+        pushOneImage : function(image) {
+            listImages.push(image);
+        },
+        getImages : function(){
+            return listImages;
+        },
         swapTwoStratas : function(index1, index2) {
             var temp;
             temp = rstratas[index1];
             rstratas[index1] = rstratas[index2];
             rstratas[index2] = temp;
         },
+        delStrata : function(){
+            var idel = parseInt(this.selectedStrata);
+            rstratas.splice(idel, 1);
+        },
+        // création d'un json contenant toute la stratigraphie au format JSON
+        StratasToJson : function(artefactName, stratigraphyName) {
+            var st = rstratas;
+            var temp = {'artefact' : artefactName, 'stratigraphy' : stratigraphyName, 'stratas' : []};
+            for (var i = 0; i < st.length; i++) {
+                var s = st[i];
+                var strat = {'name': s.getName(), 'characteristics': '', 'interfaces': ''};
+                strat['characteristics'] = s.getJsonCharacteristics();
+                strat['interfaces'] = s.getJsonInterface();
+                temp['stratas'].push(strat);
+            }
+            console.log(temp);
+            return temp;
+        },
 
+        setSubmmicrostructureFamily : function(submmicrostructureFamily) {
+            this.submmicrostructureFamily = submmicrostructureFamily;
+        },
+        getSubmmicrostructureFamily : function() {
+            return this.submmicrostructureFamily;
+        },
+        setSubcmLevelOfCorrosionFamily : function(subcmLevelOfCorrosionFamily) {
+            this.subcmLevelOfCorrosionFamily = subcmLevelOfCorrosionFamily;
+        },
+        getSubcmLevelOfCorrosionFamily : function() {
+            return this.subcmLevelOfCorrosionFamily;
+        },
+        setSubcmcompositionFamily : function(subcmcompositionFamily) {
+            this.subcmcompositionFamily = subcmcompositionFamily;
+        },
+        getSubcmcompositionFamily : function() {
+            return this.subcmcompositionFamily;
+        },
+        setSubsubcprimicrostructureaggregatecompositionFamily : function(subsubcprimicrostructureaggregatecompositionFamily) {
+            this.subsubcprimicrostructureaggregatecompositionFamily = subsubcprimicrostructureaggregatecompositionFamily;
+        },
+        getSubsubcprimicrostructureaggregatecompositionFamily : function(){
+            return this.subsubcprimicrostructureaggregatecompositionFamily;
+        },
+        setSubcprimicrostructureaggregatecompositionFamily : function(subcprimicrostructureaggregatecompositionFamily) {
+            this.subcprimicrostructureaggregatecompositionFamily = subcprimicrostructureaggregatecompositionFamily;
+        },
+        getSubcprimicrostructureaggregatecompositionFamily : function() {
+            return this.subcprimicrostructureaggregatecompositionFamily;
+        },
+        setSubcprimicrostructureFamily : function(subcprimicrostructureFamily) {
+            this.subcprimicrostructureFamily = subcprimicrostructureFamily;
+        },
+        getSubcprimicrostructureFamily : function() {
+            return this.subcprimicrostructureFamily;
+        },
+        setSubsubcpcompositionFamily : function(subsubcpcompositionFamily) {
+            this.subsubcpcompositionFamily = subsubcpcompositionFamily;
+        },
+        getSubsubcpcompositionFamily : function() {
+            return this.subsubcpcompositionFamily;
+        },
+        getSubcpcompositionFamily : function() {
+            return this.subcpcompositionFamily;
+        },
+        setSubcpcompositionFamily : function(subcpcompositionFamily) {
+            this.subcpcompositionFamily = subcpcompositionFamily;
+        },
+        setCprimicrostructureaggregatecompositionextensionFamily : function(cprimicrostructureaggregatecompositionextensionFamily) {
+            this.cprimicrostructureaggregatecompositionextensionFamily = cprimicrostructureaggregatecompositionextensionFamily;
+        },
+        getCprimicrostructureaggregatecompositionextensionFamily : function() {
+            return this.cprimicrostructureaggregatecompositionextensionFamily;
+        },
+        getCprimicrostructureaggregatecompositionFamily : function() {
+            return this.cprimicrostructureaggregatecompositionFamily;
+        },
+        setCprimicrostructureaggregatecompositionFamily : function(cprimicrostructureaggregatecompositionFamily) {
+            this.cprimicrostructureaggregatecompositionFamily = cprimicrostructureaggregatecompositionFamily;
+        },
+        setCpcompositionextensionFamily : function(cpcompositionextensionFamily) {
+            this.cpcompositionextensionFamily = cpcompositionextensionFamily;
+        },
+        getCpcompositionextensionFamily : function() {
+            return this.cpcompositionextensionFamily;
+        },
+        setCmlevelofcorrosionFamily : function(cmlevelofcorrosionFamily) {
+            this.cmlevelofcorrosionFamily = cmlevelofcorrosionFamily;
+        },
+        getCmlevelofcorrosionFamily : function() {
+            return this.cmlevelofcorrosionFamily;
+        },
+        setCprimicrostructureFamily : function(cprimicrostructureFamily){
+            this.cprimicrostructureFamily = cprimicrostructureFamily;
+        },
+        getCprimicrostructureFamily : function() {
+            return this.cprimicrostructureFamily;
+        },
+        setSubmmicrostructureFamily : function(submmicrostructureFamily) {
+            this.submmicrostructureFamily = submmicrostructureFamily;
+        },
+        getSubmmicrostructureFamily : function() {
+            return this.submmicrostructureFamily;
+        },
         setInterfaceadherenceFamily : function(interfaceadherenceFamily) {
             this.interfaceadherenceFamily = interfaceadherenceFamily;
         },

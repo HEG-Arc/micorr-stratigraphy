@@ -8,45 +8,46 @@ from MiCorrApp.ch.hearc.ig.micorr.service.MiCorrService import MiCorrService
 import time
 
 
+#retourne la page d'accueil
 def home(request):
     return render(request, 'index.html', locals())
 
 def test(request):
     print ("HELLO")
 
-    #n4j = Neo4jDAO()
-    #print (n4j.addStratigraphy("hello", "stratigraphy100000"))
-
     ms = MiCorrService()
-    ms.getAllCharacteristics()
-
-    #ms = MiCorrService()
-    #for strat in ms.getStratigraphyByArtefact("artefact17"):
-    #    print (strat.name)
-
-
+    ms.test()
 
     return render(request, 'test.html', locals())
 
+# Retourne tous les détails d'une stratigraphie, characteristiques et interfaces
+# @ params : stratigraphy nom de la stratigraphie
 def getStratigraphyDetails(request, stratigraphy):
     ms = MiCorrService()
     return HttpResponse(json.dumps(ms.getStratigraphyDetails(stratigraphy)), content_type='application/json')
 
+# retourne toutes les sous caractéristiques et sous caractéristiques
+# @ params
 def getallcharacteristic(request):
     ms = MiCorrService()
     return HttpResponse(json.dumps(ms.getAllCharacteristic()), content_type='application/json')
 
+# retourne toutes les caractéristiques et sous caractéristiques
+# @ params
 def addStratigraphy(request, artefact, stratigraphy):
     ms = MiCorrService()
     response = {"insertStatus" : ms.addStratigraphy(artefact, stratigraphy)}
     return HttpResponse(json.dumps(response), content_type='application/json')
 
+# Vérifie si une stratigraphie existe déjà
+# @ params stratigraphy nom de la stratigraphie
 def stratigraphyExists(request, stratigraphy):
     ms = MiCorrService()
     exists = {"StratigraphyExists" : ms.stratigraphyExists(stratigraphy)}
     return HttpResponse(json.dumps(exists), content_type='application/json')
 
-
+# retourne toutes les sous caractéristiques et sous caractéristiques
+# @ params
 def getStratigraphyByArtefact(request, artefact):
     ms = MiCorrService()
     strats = {'strats' : []}
@@ -54,6 +55,8 @@ def getStratigraphyByArtefact(request, artefact):
         strats['strats'].append({'name' : strat.name})
     return HttpResponse(json.dumps(strats), content_type='application/json')
 
+# retourne la liste de tous les artefacts
+# @ params
 def getallartefacts(request):
     ms = MiCorrService()
     artefacts = {'artefacts' : []}
@@ -61,6 +64,52 @@ def getallartefacts(request):
         artefacts['artefacts'].append({'name' : artefact.name})
     return HttpResponse(json.dumps(artefacts), content_type='application/json')
 
+# retourne sauvegarde un faciès de corrosion
+# @ params stratigraphie au format urlencode
+def save(request, data):
+    ms = MiCorrService()
+
+    # transformation de urlencode en json
+    data = json.loads(data)
+
+    response = ms.save(data)
+
+    return HttpResponse(json.dumps(response), content_type='application/json')
+
+# retourne les artefacts similaires
+# @ params stratigraphie au format urlencode
+def match (request, data):
+    ms = MiCorrService()
+    #transformation de urlencode au format json
+    data = json.loads(data)
+    response = ms.match(data)
+    return HttpResponse(json.dumps(response), content_type='application/json')
+
+# supprime une stratigraphie
+# @ params nom de la stratigraphie
+def deleteStratigraphy(request, stratigraphy):
+    ms = MiCorrService()
+
+    response = ms.deleteStratigrapy(stratigraphy)
+
+    return HttpResponse(json.dumps(response), content_type='application/json')
+
+# Ajoute un artefact
+# @ params nom de l'artefact
+def addArtefact(request, artefact):
+    ms = MiCorrService()
+
+    response = ms.addArtefact(artefact)
+
+    return HttpResponse(json.dumps(response), content_type='application/json')
+
+# supprime un artefact
+# @ params nom de l'artefact
+def deleteArtefact(request, artefact):
+    ms = MiCorrService()
+
+    response = ms.delArtefact(artefact)
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 

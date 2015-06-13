@@ -1,31 +1,45 @@
+/*
+ * MiCorrApp @ HE-ARC
+ *
+ * Version: 1
+ *
+ */
+
+//routage de l'application
 angular.module('MiCorr', ['ngRoute', 'ngResource', 'ui.bootstrap']).
   config(['$routeProvider', function($routeProvider) {
     $routeProvider.
-        when('/artefact/:name', {
+        when('/artefact/:name', { // affichage des stratigraphies
             templateUrl: '../static/micorr/views/artefact.html',
             controller: 'showArtefact'
         }).
-        when('/artefact/:artefact/:strat/', {
+        when('/artefact/:artefact/:strat/', { // affichage de la stratigraphie
             templateUrl: '../static/micorr/views/strat.html'
         }).
         otherwise({
-            redirectTo: '/',
+            redirectTo: '/', // affichage des artefacts
             templateUrl: '../static/micorr/views/listartefacts.html',
             controller: 'listArtefacts'
         });
 }]);
 
+// Controlleur qui est appelé lors de l'affichage d'une stratographie
 angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams, $timeout, MiCorrService, StrataData) {
+    // on charge une nouvelle stratigraphie donc on supprime la stratigraphie en mémoire dans le service
     StrataData.clear();
 
-    $scope.artefactName     = $routeParams.artefact;
-    $scope.stratigraphyName = $routeParams.strat;
-    $scope.rstratas         = StrataData.getStratas();
-    $scope.natures          = natures;
-    $scope.strataName       = "No strata selected";
-    $scope.natureFamilyname = "";
 
-    $scope.showTabForms = false;
+    $scope.artefactName     = $routeParams.artefact;        // nom de l'artefact
+    $scope.stratigraphyName = $routeParams.strat;           // nom de la stratigraphie
+    $scope.rstratas         = StrataData.getStratas();      // liste des strates de la stratigraphie se trouvant dans le service
+    $scope.natures          = natures;                      // liste des natures de matériau dans le fichier init.js
+    $scope.strataName       = "No strata selected";         // par défaut aucune strata n'est choisie
+    $scope.natureFamilyname = "";                           // par défaut aucune nature n'est choisie
+
+    //ces variables servent à afficher/masquer dans le formulaire les champs appartenants à une nature de matériau
+    // par exemple SI on prend D, le champ colourFamily s'affiche alors qu'il va se masquer dès qu'on va sélectionner un SV
+    $scope.showTabForms = false;        //par défaut le formulaire est masqué
+
     $scope.showColor = false;
     $scope.showBrightness = false;
     $scope.showOpacity = false;
@@ -46,23 +60,48 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.showinterfacetransition = false;
     $scope.showinterfaceroughness = false;
     $scope.showinterfaceadherence = false;
+    $scope.showCmlevelofcorrosionFamily = false;
+    $scope.showcpcompositionextensionfamily = false;
+    $scope.showcprimicrostructureaggregatecompositionFamily = false;
+    $scope.showcprimicrostructureaggregatecompositionextensionFamily = false;
+    $scope.showsubcpcompositionFamily = false;
+    $scope.showsubsubcpcompositionFamily = false;
+    $scope.showsubcprimicrostructureFamily = false;
+    $scope.showsubcprimicrostructureaggregatecompositionFamily = false;
+    $scope.showsubsubcprimicrostructureaggregatecompositionFamily = false;
+    $scope.showsubcmcompositionFamily = false;
+    $scope.showsubcmlevelofcorrosionFamily = false;
+    $scope.showsubmmicrostructureFamily = false;
 
+    //Quand on accède au détail d'une stratigraphie, la première chose effectuée est le chargement en asynchrone des strates qui constituent cette stratigraphie.
     MiCorrService.getDetailedStratigraphy($scope.stratigraphyName).success(function(data){
+        // On parcourt toutes les strates que le service nous a retourné
         for (var i = 0; i < data.length; i++) {
             var loadedStrata = data[i];
+            // Pour pouvoir générer une strates, il faut au minimum une charactéristique qui est natureFamily. Si elle n'existe pas alors il ne peut pas y avoir de strates
             if (loadedStrata['characteristics'].length == 0){
                 console.log("Can not load this strata. Probably this strata has no natureFamily characteristics !");
                 alert("Error : Strata '" + loadedStrata.name + "' has no nature characteristics. This strata can not be loaded !");
             }
-            else {
+            else { // Si c'est tout bon on génère la strate
+                // On commence par créer une instance de strate qui contient les valeurs des données communes à chaque strates
                 var strata = natureFactory($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "natureFamily"));
+                strata.setNatureFamilyUid($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "natureFamily"));
                 strata.setName(loadedStrata.name);
+
+                /* on utilise la méthode getCharacteristicByFamily qui possède deux paramètres
+                 * 1) la liste des charactéristiques pour cette strate au format JSON
+                 * 2) la famille de characteristiques qu'on veut ressortir
+                 * On fait ça comme ça car les données sont une liste au format json
+                 * et cette méthode permet de retrouver la bonne charactéristique pour la bonne famille de charactéristique
+                 */
                 strata.setShapeFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "shapeFamily"));
                 strata.setWidthFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "widthFamily"));
                 strata.setThicknessFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "thicknessFamily"));
                 strata.setContinuityFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "continuityFamily"));
                 strata.setDirectionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "directionFamily"));
 
+                // Puis on charge les données qui sont propres à chaque nature de strate dans l'instance de la strate
                 if (strata.findDependency('colourFamily'))
                     strata.setColourFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "colourFamily"));
                 if (strata.findDependency('brightnessFamily'))
@@ -97,7 +136,16 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
                     strata.setCmcompositionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "cmCompositionFamily"));
                 if (strata.findDependency('mcompositionFamily'))
                     strata.setMcompositionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "mCompositionFamily"));
+                if (strata.findDependency('cmlevelofcorrosionFamily'))
+                    strata.setCmLevelOfCorrosionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "cmLevelOfCorrosionFamily"))
+                if (strata.findDependency('cpcompositionextensionFamily'))
+                    strata.setCpcompositionextensionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "cpCompositionExtensionFamily"));
+                if (strata.findDependency('cprimicrostructureaggregatecompositionFamily'))
+                    strata.setCprimicrostructureaggregateCompositionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "cpriMicrostructureAggregateCompositionFamily"));
+                if (strata.findDependency('cprimicrostructureaggregatecompositionextensionFamily'))
+                    strata.setCprimicrostructureaggregateCompositionextensionFamily($scope.getCharacteristicByFamily(loadedStrata['characteristics'], "cpriMicrostructureAggregateCompositionExtensionFamily"));
 
+                // Puis on charge les interfaces dans l'instance de la strate
                 strata.setInterfaceprofileFamily($scope.getCharacteristicByFamily(loadedStrata['interfaces']['characteristics'], "interfaceProfileFamily"));
                 if (strata.findDependency('interfacetransitionFamily'))
                     strata.setInterfacetransitionFamily($scope.getCharacteristicByFamily(loadedStrata['interfaces']['characteristics'], "interfaceTransitionFamily"));
@@ -106,10 +154,36 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
                 if (strata.findDependency('interfaceadherenceFamily'))
                     strata.setInterfaceadherenceFamily($scope.getCharacteristicByFamily(loadedStrata['interfaces']['characteristics'], "interfaceAdherenceFamily"));
 
+                //sub
+                // Puis on charge les sous-caractéristiques et sous-sous-caractéristiques
+                var subCharacteristicsList = loadedStrata['subcharacteristics'];
+                if (strata.findDependency('subcpcompositionFamily'))
+                   strata.setSubcpcompositionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubcpcompositionFamily()));
+                if (strata.findDependency('subsubcpcompositionFamily'))
+                   strata.setSubsubcpcompositionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubsubcpcompositionFamily()));
+                if (strata.findDependency('subcprimicrostructureFamily'))
+                    strata.setSubcprimicrostructureFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubcprimicrostructureFamily()));
+                if (strata.findDependency('subcprimicrostructureaggregatecompositionFamily'))
+                    strata.setSubcprimicrostructureaggregateCompositionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubcprimicrostructureaggregatecompositionFamily()));
+                if (strata.findDependency('subsubcprimicrostructureaggregatecompositionFamily'))
+                    strata.setSubsubcprimicrostructureaggregateCompositionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubsubcprimicrostructureaggregatecompositionFamily()));
+                if (strata.findDependency('subcmcompositionFamily'))
+                    strata.setSubCmcompositionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubcmcompositionFamily()));
+                if (strata.findDependency('subcmlevelofcorrosionFamily'))
+                    strata.setSubCmLevelOfCorrosionFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubcmLevelOfCorrosionFamily()));
+                if (strata.findDependency('submmicrostructureFamily'))
+                    strata.setSubmmicrostructureFamily($scope.getSubCharacteristicByFamily(subCharacteristicsList, StrataData.getSubmmicrostructureFamily()));
+
+                // Une fois notre instance de strate créé avec tous les paramètres nécessaires, alors on l'ajoute à notre service.
                 StrataData.pushOneStrata(strata);
             }
         }});
 
+     /* cherche dans une liste une famille et retourne la valeur name de la famille
+     * @params data : charactéristique au format json
+     *         family : nom de la famille
+     * €returns valeur de la charactéristique
+     */
     $scope.getCharacteristicByFamily = function(data, family) {
         for (var i = 0; i < data.length; i++) {
             if (data[i].family == family){
@@ -119,30 +193,61 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
         return "";
     }
 
+     /* cherche dans une liste (liste de sous-charactéristiques) une valeur et si elle correspond
+     * à la valeur donnée en paramètre alors on retourne la sous caractéristique
+     * @params sub : sous-charactéristique de cette strate
+     *         list : liste des sous caractéristiques pour cette famille
+     * €returns valeur de la charactéristique
+     */
+    $scope.getSubCharacteristicByFamily = function(sub, list) {
+        for (var i = 0; i < sub.length; i++) {
+            for (var j = 0; j < list.length; j++) {
+                if (sub[i].name == list[j].name)
+                    return sub[i].name;
+            }
+        }
+        return "";
+    }
+
+
+     /* exécute une mise à jour de l'interface après un événement en provenance d'un enfant
+     * @params index : index de la strate sélectionnée
+     * €returns
+     */
     $scope.$on('doUpdate', function(event, index){
-        $timeout(function(){
-            $scope.update(index);
+        $timeout(function(){// attend que tous les $apply() soient finis avant de faire notre udate
+            $scope.update(index); // on donne toujours l'index de la strate sélectionnée pour la mise à jour
         });
     });
 
+     /* exécute une mise à jour de l'interface. On met à jour le formulaire pour être plus précis
+     * @params index : index de la strate sélectionnée
+     * €returns
+     */
     $scope.update = function(index){
-        $scope.showTabForms = true;
-        StrataData.setSelectedStrata(index);
-        $scope.hideShowForms(StrataData.getStratas()[index]);
-        $scope.strataName = StrataData.getStratas()[index].getName();
-        $scope.natureFamilyname = StrataData.getStratas()[index].getNatureFamily();
+        $scope.showTabForms = true; //Affichage de formulaire
+        StrataData.setSelectedStrata(index); // on set dans le sevice quelle est la strate sélectionnée
+        $scope.hideShowForms(StrataData.getStratas()[index]);   // On affiche/masque les champs en fonction de la nature de la strate
+        $scope.strataName = StrataData.getStratas()[index].getName();   // On affiche le nom de la strate
+        $scope.natureFamilyname = StrataData.getStratas()[index].getNatureFamily(); // On affiche la nature de la strate
 
-        //var t = StrataData.getStratas()[index];
-
+        // Dans notre formulaire on a des onglets
+        // chaque onglet a un controlleur
+        // il faut mettre à jour chaque contrôlleur
         $scope.$broadcast('updateMorphology');
         $scope.$broadcast('updateTexture');
         $scope.$broadcast('updateMicrostructure');
         $scope.$broadcast('updateComposition');
         $scope.$broadcast('updateInterface');
 
+        // apply les mises à jour de l'interface
         $scope.$apply();
-    }
+    };
 
+     /* affiche/masque des champs en fonction de la strate
+     * @params strata : strate sélectionnée
+     * €returns
+     */
     $scope.hideShowForms = function(strata) {
         $scope.showColor = strata.findDependency('colourFamily');
         $scope.showBrightness = strata.findDependency('brightnessFamily');
@@ -164,10 +269,32 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
         $scope.showinterfacetransition = strata.findDependency('interfacetransitionFamily');
         $scope.showinterfaceroughness = strata.findDependency('interfaceroughnessFamily');
         $scope.showinterfaceadherence = strata.findDependency('interfaceadherenceFamily');
-    }
+        $scope.showCmlevelofcorrosionFamily = strata.findDependency('cmlevelofcorrosionFamily');
+        $scope.showcpcompositionextensionfamily = strata.findDependency('cpcompositionextensionFamily');
+        $scope.showcprimicrostructureaggregatecompositionFamily = strata.findDependency('cprimicrostructureaggregatecompositionFamily');
+        $scope.showcprimicrostructureaggregatecompositionextensionFamily = strata.findDependency('cprimicrostructureaggregatecompositionextensionFamily');
+        $scope.showsubcpcompositionFamily = strata.findDependency('subcpcompositionFamily');
+        $scope.showsubsubcpcompositionFamily = strata.findDependency('subsubcpcompositionFamily');
+        $scope.showsubcprimicrostructureFamily = strata.findDependency('subcprimicrostructureFamily');
+        $scope.showsubcprimicrostructureaggregatecompositionFamily = strata.findDependency('subcprimicrostructureaggregatecompositionFamily');
+        $scope.showsubsubcprimicrostructureaggregatecompositionFamily = strata.findDependency('subsubcprimicrostructureaggregatecompositionFamily');
+        $scope.showsubcmcompositionFamily = strata.findDependency('subcmcompositionFamily');
+        $scope.showsubcmlevelofcorrosionFamily = strata.findDependency('subcmlevelofcorrosionFamily');
+        $scope.showsubmmicrostructureFamily = strata.findDependency('submmicrostructureFamily');
+    };
 
+     /* Mise à jour du dessin lors d'un évenement provenant d'un enfant
+     * @params
+     * €returns
+     */
     $scope.$on('updateDraw', function() {
-        $timeout(function(){
+        $timeout(function(){ // on attend que tous les $apply() soient finis
+            /*On force ici la mise à jour des dessins qui sont dans une liste qui sont affichés avec une directive
+             * rstratas contient une liste d'instance de stratigraphies
+             * Si on met à jour une propriété dans notre service, le watch ne verra rien et rien ne sera mis à jour
+             * SI on veut forcer une mise à jour il faut supprimer la référence vers le service qui contient les strates
+             * forcer une mise à jour avec $apply()
+             * récupérer la référence vers les strates du service et enfin refaire une mise à jour avec $apply()*/
             $scope.rstratas = new Array();
             $scope.$apply();
             $scope.rstratas = StrataData.getStratas();
@@ -175,18 +302,35 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
         });
     });
 
+     /* appelle le service rest qui sauvegarde la stratigraphie en cours de construction
+     * est appelé par un événement provenant d'un enfant
+     * @params
+     * €returns
+     */
+    $scope.$on('save', function() {
+        MiCorrService.saveStratigraphy(encodeURIComponent(JSON.stringify(StrataData.StratasToJson($scope.artefactName, $scope.stratigraphyName))));
+    });
 
+// contrôlleur qui est le formulare qui contient les champs mais sans les onglets
 }).controller('tabsStrata', function ($scope, $route, $window, MiCorrService, StrataData) {
+
+     /* Déplace une strate vers le haut et met à jour l'interface
+     * @params
+     * €returns
+     */
     $scope.movestrataup = function() {
         var current = parseInt(StrataData.getCurrentSelectedStrata());
         if (current > 0) {
-            //StrataData.setSelectedStrata(current - 1);
             StrataData.swapTwoStratas(current, current - 1);
             $scope.$emit('doUpdate', current - 1);
             $scope.$emit('updateDraw');
         }
     };
 
+     /* Déplace une strate vers le bas et met à jour l'interface
+     * @params
+     * €returns
+     */
     $scope.movestratadown = function() {
         var current = parseInt(StrataData.getCurrentSelectedStrata());
         if (parseInt(StrataData.getCurrentSelectedStrata()) + 1 < StrataData.getStratas().length){
@@ -195,7 +339,9 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             $scope.$emit('updateDraw', current + 1);
         }
     };
+//Contrôlleur qui s'occupe de l'onglet de la morphologie
 }).controller('stratMorphologyCtrl', function ($scope, $route, $window, StrataData) {
+    // On récupère les valeurs qui vont aller dans les champs de notre formulaire
     $scope.fShapeFamily     = "";
     $scope.shapeFamily      = StrataData.getShapeFamily()['characteristics'];
     $scope.widthFamily      = StrataData.getWidthFamily()['characteristics'];
@@ -207,6 +353,7 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.opacityFamily    = StrataData.getOpacityFamily()['characteristics'];
     $scope.magnetismFamily  = StrataData.getMagnetismFamily()['characteristics'];
 
+    //valeurs sélectionnées dans les champs de notre formulaire
     $scope.selectedShapeFamily;
     $scope.selectedWidthFamily;
     $scope.selectedThicknessFamily;
@@ -217,6 +364,11 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.selectedOpacityFamily;
     $scope.selectedMagnetismFamily;
 
+     /* Met à jour les valeurs dans les champs quand on change de strate. Est appelé par un événement parent
+     * On met à jour les valeurs sélectionnées en fonction des valeurs qui se trouvent dans la strate actuelle
+     * @params
+     * €returns
+     */
     $scope.$on('updateMorphology', function(){
         var strata = StrataData.getStratas()[StrataData.getCurrentSelectedStrata()];
         $scope.selectedShapeFamily = getCharacteristicByItsName($scope.shapeFamily, strata.getShapeFamily());
@@ -236,6 +388,10 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
 
     });
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.upMorpho = function() {
         var temp = StrataData.getStratas();
         var index = StrataData.getCurrentSelectedStrata();
@@ -254,10 +410,10 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
         if (temp[index].findDependency('magnetismFamily'))
             temp[index].setMagnetismFamily($scope.selectedMagnetismFamily.name);
 
-
+        //mise à jour du dessin
         $scope.$emit('updateDraw');
     };
-
+//Contrôlleur qui s'occupe de l'onglet de la texture
 }).controller('stratTextureCtrl', function ($scope, $route, $window, StrataData) {
 
     $scope.porosityFamily   = StrataData.getPorosityFamily()['characteristics'];
@@ -265,11 +421,16 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.hardnessFamily   = StrataData.getHardnessFamily()['characteristics'];
     $scope.crackingFamily   = StrataData.getCrackingFamily()['characteristics'];
 
+    //valeurs sélectionnées dans les champs de notre formulaire
     $scope.selectedPorosityFamily;
     $scope.selectedCohesionFamily;
     $scope.selectedHardnessFamily;
     $scope.selectedCrackingFamily;
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.$on('updateTexture', function(){
         var strata = StrataData.getStratas()[StrataData.getCurrentSelectedStrata()];
 
@@ -283,6 +444,10 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             $scope.selectedCrackingFamily = getCharacteristicByItsName($scope.crackingFamily, strata.getCrackingFamily());
     });
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.upTexture = function() {
         var temp = StrataData.getStratas();
         var index = StrataData.getCurrentSelectedStrata();
@@ -298,15 +463,37 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
 
         $scope.$emit('updateDraw');
     };
-
+//Contrôlleur qui s'occupe de l'onglet de la microstructure
 }).controller('stratMicrostructureCtrl', function ($scope, $route, $window, StrataData) {
-
+    // On récupère les valeurs qui vont aller dans les champs de notre formulaire
     $scope.cprimicrostructureFamily   = StrataData.getCprimicrostructureFamily()['characteristics'];
     $scope.mmicrostructureFamily      = StrataData.getMmicrostructureFamily()['characteristics'];
+    $scope.cmlevelofcorrosionFamily   = StrataData.getCmlevelofcorrosionFamily()['characteristics'];
+    $scope.cprimicrostructureaggregatecompositionFamily = StrataData.getCprimicrostructureaggregatecompositionFamily()['characteristics'];
+    $scope.cprimicrostructureaggregatecompositionExtensionFamily = StrataData.getCprimicrostructureaggregatecompositionextensionFamily()['characteristics'];
+    $scope.subcprimicrostructureFamily = StrataData.getSubcprimicrostructureFamily();
+    $scope.subcprimicrostructureaggregatecompositionFamily = StrataData.getSubcprimicrostructureaggregatecompositionFamily();
+    $scope.subsubcprimicrostructureaggregatecompositionFamily = StrataData.getSubsubcprimicrostructureaggregatecompositionFamily();
+    $scope.subcmlevelofcorrosionFamily = StrataData.getSubcmLevelOfCorrosionFamily();
+    $scope.submmicrostructureFamily = StrataData.getSubmmicrostructureFamily();
 
+    //valeurs sélectionnées dans les champs de notre formulaire
     $scope.selectedCprimicrostructureFamily;
     $scope.selectedMmicrostructureFamily;
+    $scope.selectedCmlevelofcorrosionFamily;
+    $scope.selectedSubcprimicrostructureFamily;
+    $scope.selectedCprimicrostructureaggregatecompositionFamily;
+    $scope.selectedCprimicrostructureaggregatecompositionExtensionFamily;
+    $scope.selectedSubcprimicrostructureaggregatecompositionFamily;
+    $scope.selectedSubsubcprimicrostructureaggregatecompositionFamily;
+    $scope.selectedSubcmlevelofcorrosionFamily;
+    $scope.selectedSubmmicrostructureFamily;
 
+     /* Met à jour les valeurs dans les champs quand on change de strate. Est appelé par un événement parent
+     * On met à jour les valeurs sélectionnées en fonction des valeurs qui se trouvent dans la strate actuelle
+     * @params
+     * €returns
+     */
     $scope.$on('updateMicrostructure', function(){
         var strata = StrataData.getStratas()[StrataData.getCurrentSelectedStrata()];
 
@@ -314,9 +501,29 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             $scope.selectedCprimicrostructureFamily = getCharacteristicByItsName($scope.cprimicrostructureFamily, strata.getCpriMicrostructureFamily());
         if (strata.findDependency('mmicrostructureFamily'))
             $scope.selectedMmicrostructureFamily = getCharacteristicByItsName($scope.mmicrostructureFamily, strata.getMmicrostructureFamily());
+        if (strata.findDependency('cmlevelofcorrosionFamily'))
+            $scope.selectedCmlevelofcorrosionFamily = getCharacteristicByItsName($scope.cmlevelofcorrosionFamily, strata.getCmLevelOfCorrosionFamily());
+        if (strata.findDependency('subcprimicrostructureFamily'))
+            $scope.selectedSubcprimicrostructureFamily = getCharacteristicByItsName($scope.subcprimicrostructureFamily, strata.getSubcprimicrostructureFamily());
+        if (strata.findDependency('cprimicrostructureaggregatecompositionFamily'))
+            $scope.selectedCprimicrostructureaggregatecompositionFamily = getCharacteristicByItsName($scope.cprimicrostructureaggregatecompositionFamily, strata.getCprimicrostructureaggregateCompositionFamily());
+        if (strata.findDependency('cprimicrostructureaggregatecompositionextensionFamily'))
+            $scope.selectedCprimicrostructureaggregatecompositionExtensionFamily = getCharacteristicByItsName($scope.cprimicrostructureaggregatecompositionExtensionFamily, strata.getCprimicrostructureaggregateCompositionextensionFamily());
+        if (strata.findDependency('subcprimicrostructureaggregatecompositionFamily'))
+            $scope.selectedSubcprimicrostructureaggregatecompositionFamily = getCharacteristicByItsName($scope.subcprimicrostructureaggregatecompositionFamily, strata.getSubcprimicrostructureaggregateCompositionFamily());
+        if (strata.findDependency('subsubcprimicrostructureaggregatecompositionFamily'))
+            $scope.selectedSubsubcprimicrostructureaggregatecompositionFamily = getCharacteristicByItsName($scope.subsubcprimicrostructureaggregatecompositionFamily, strata.getSubsubcprimicrostructureaggregateCompositionFamily());
+        if (strata.findDependency('subcmlevelofcorrosionFamily'))
+            $scope.selectedSubcmlevelofcorrosionFamily = getCharacteristicByItsName($scope.subcmlevelofcorrosionFamily, strata.getSubCmLevelOfCorrosionFamily());
+        if (strata.findDependency('submmicrostructureFamily'))
+            $scope.selectedSubmmicrostructureFamily = getCharacteristicByItsName($scope.submmicrostructureFamily, strata.getSubmmicrostructureFamily());
 
     });
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.upMicrostructure = function() {
         var temp = StrataData.getStratas();
         var index = StrataData.getCurrentSelectedStrata();
@@ -325,19 +532,41 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             temp[index].setCpriMicrostructureFamily($scope.selectedCprimicrostructureFamily.name);
         if (temp[index].findDependency('mmicrostructureFamily'))
             temp[index].setMmicrostructureFamily($scope.selectedMmicrostructureFamily.name);
+        if (temp[index].findDependency('cmlevelofcorrosionFamily'))
+            temp[index].setCmLevelOfCorrosionFamily($scope.selectedCmlevelofcorrosionFamily.name);
+        if (temp[index].findDependency('subcprimicrostructureFamily'))
+            temp[index].setSubcprimicrostructureFamily($scope.selectedSubcprimicrostructureFamily.name);
+        if (temp[index].findDependency('cprimicrostructureaggregatecompositionFamily'))
+            temp[index].setCprimicrostructureaggregateCompositionFamily($scope.selectedCprimicrostructureaggregatecompositionFamily.name);
+        if (temp[index].findDependency('cprimicrostructureaggregatecompositionextensionFamily'))
+            temp[index].setCprimicrostructureaggregateCompositionextensionFamily($scope.selectedCprimicrostructureaggregatecompositionExtensionFamily.name);
+        if (temp[index].findDependency('subcprimicrostructureaggregatecompositionFamily'))
+            temp[index].setSubcprimicrostructureaggregateCompositionFamily($scope.selectedSubcprimicrostructureaggregatecompositionFamily.name);
+        if (temp[index].findDependency('subsubcprimicrostructureaggregatecompositionFamily'))
+            temp[index].setSubsubcprimicrostructureaggregateCompositionFamily($scope.selectedSubsubcprimicrostructureaggregatecompositionFamily.name);
+        if (temp[index].findDependency('subcmlevelofcorrosionFamily'))
+            temp[index].setSubCmLevelOfCorrosionFamily($scope.selectedSubcmlevelofcorrosionFamily.name);
+        if (temp[index].findDependency('submmicrostructureFamily'))
+            temp[index].setSubmmicrostructureFamily($scope.selectedSubmmicrostructureFamily.name);
 
         $scope.$emit('updateDraw');
     };
-
+//Contrôlleur qui s'occupe de l'onglet de la composition
 }).controller('stratCompositionCtrl', function ($scope, $route, $window, StrataData) {
+    // On récupère les valeurs qui vont aller dans les champs de notre formulaire
     $scope.scompositionFamily      = StrataData.getScompositionFamily()['characteristics'];
     $scope.nmmcompositionFamily    = StrataData.getNmmcompositionFamily()['characteristics'];
     $scope.dcompositionFamily      = StrataData.getDcompositionFamily()['characteristics'];
     $scope.pomcompositionFamily    = StrataData.getPomcompositionFamily()['characteristics'];
     $scope.cpcompositionFamily     = StrataData.getCpcompositionFamily()['characteristics'];
     $scope.cmcompositionFamily     = StrataData.getCmcompositionFamily()['characteristics'];
-    $scope.mcompositionFamily     = StrataData.getMcompositionFamily()['characteristics'];
+    $scope.mcompositionFamily      = StrataData.getMcompositionFamily()['characteristics'];
+    $scope.cpcompositionextensionFamily = StrataData.getCpcompositionextensionFamily()['characteristics'];
+    $scope.subcpcompositionFamily  = StrataData.getSubcpcompositionFamily();
+    $scope.subsubcpcompositionFamily  = StrataData.getSubsubcpcompositionFamily();
+    $scope.subcmcompositionFamily  = StrataData.getSubcmcompositionFamily();
 
+    //valeurs sélectionnées dans les champs de notre formulaire
     $scope.selectedScompositionFamily;
     $scope.selectedNmmcompositionFamily;
     $scope.selectedDcompositionFamily;
@@ -345,7 +574,16 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.selectedCpcompositionFamily;
     $scope.selectedCmcompositionFamily;
     $scope.selectedMcompositionFamily;
+    $scope.selectedCpcompositionextensionFamily;
+    $scope.selectedSubcpcompositionFamily;
+    $scope.selectedSubsubcpcompositionFamily;
+    $scope.selectedSubcmcompositionFamily;
 
+     /* Met à jour les valeurs dans les champs quand on change de strate. Est appelé par un événement parent
+     * On met à jour les valeurs sélectionnées en fonction des valeurs qui se trouvent dans la strate actuelle
+     * @params
+     * €returns
+     */
     $scope.$on('updateComposition', function(){
         var strata = StrataData.getStratas()[StrataData.getCurrentSelectedStrata()];
 
@@ -363,9 +601,21 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             $scope.selectedCmcompositionFamily = getCharacteristicByItsName($scope.cmcompositionFamily, strata.getCmcompositionFamily());
         if (strata.findDependency('mcompositionFamily'))
             $scope.selectedMcompositionFamily = getCharacteristicByItsName($scope.mcompositionFamily, strata.getMcompositionFamily());
+        if (strata.findDependency('cpcompositionextensionFamily'))
+            $scope.selectedCpcompositionextensionFamily = getCharacteristicByItsName($scope.cpcompositionextensionFamily, strata.getCpcompositionextensionFamily());
+        if (strata.findDependency('subcpcompositionFamily'))
+            $scope.selectedSubcpcompositionFamily = getCharacteristicByItsName($scope.subcpcompositionFamily, strata.getSubcpcompositionFamily());
+        if (strata.findDependency('subsubcpcompositionFamily'))
+            $scope.selectedSubsubcpcompositionFamily = getCharacteristicByItsName($scope.subsubcpcompositionFamily, strata.getSubsubcpcompositionFamily());
+        if (strata.findDependency('subcmcompositionFamily'))
+            $scope.selectedSubcmcompositionFamily = getCharacteristicByItsName($scope.subcmcompositionFamily, strata.getSubCmcompositionFamily());
 
     });
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.upComposition = function() {
         var temp = StrataData.getStratas();
         var index = StrataData.getCurrentSelectedStrata();
@@ -384,21 +634,36 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
             temp[index].setCmcompositionFamily($scope.selectedCmcompositionFamily.name);
         if (temp[index].findDependency('mcompositionFamily'))
             temp[index].setMcompositionFamily($scope.selectedMcompositionFamily.name);
+        if (temp[index].findDependency('cpcompositionextensionFamily'))
+            temp[index].setCpcompositionextensionFamily($scope.selectedCpcompositionextensionFamily.name);
+        if (temp[index].findDependency('subcpcompositionFamily'))
+            temp[index].setSubcpcompositionFamily($scope.selectedSubcpcompositionFamily.name);
+        if (temp[index].findDependency('subsubcpcompositionFamily'))
+            temp[index].setSubsubcpcompositionFamily($scope.selectedSubsubcpcompositionFamily.name);
+        if (temp[index].findDependency('subcmcompositionFamily'))
+            temp[index].setSubCmcompositionFamily($scope.selectedSubcmcompositionFamily.name);
 
         $scope.$emit('updateDraw');
     };
-
+//Contrôlleur qui s'occupe de l'onglet de l'interface
 }).controller('stratInterfaceCtrl', function ($scope, $route, $window, StrataData) {
+    // On récupère les valeurs qui vont aller dans les champs de notre formulaire
     $scope.interfaceprofileFamily    = StrataData.getInterfaceprofileFamily()['characteristics'];
     $scope.interfacetransitionFamily = StrataData.getInterfacetransitionFamily()['characteristics'];
     $scope.interfaceroughnessFamily  = StrataData.getInterfaceroughnessFamily()['characteristics'];
     $scope.interfaceadherenceFamily  = StrataData.getInterfaceadherenceFamily()['characteristics'];
 
+    //valeurs sélectionnées dans les champs de notre formulaire
     $scope.selectedInterfaceprofileFamily;
     $scope.selectedInterfacetransitionFamily;
     $scope.selectedInterfaceroughnessFamily;
     $scope.selectedInterfaceadherenceFamily;
 
+     /* Met à jour les valeurs dans les champs quand on change de strate. Est appelé par un événement parent
+     * On met à jour les valeurs sélectionnées en fonction des valeurs qui se trouvent dans la strate actuelle
+     * @params
+     * €returns
+     */
     $scope.$on('updateInterface', function(){
         var strata = StrataData.getStratas()[StrataData.getCurrentSelectedStrata()];
 
@@ -412,6 +677,10 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
 
     });
 
+     /* Met à jour les données de la strate en fonction des valeurs dans le formulaire
+     * @params
+     * €returns
+     */
     $scope.upInterface = function() {
         var temp = StrataData.getStratas();
         var index = StrataData.getCurrentSelectedStrata();
@@ -426,7 +695,7 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
 
         $scope.$emit('updateDraw');
     };
-
+// Contrôlleur qui s'occupe d'ajouter une strate
 }).controller('ModalAddStrataCtrl', function ($scope, $modal, $log) {
     $scope.artefactName = $scope.$parent.artefactName;
     $scope.open = function (size) {
@@ -439,7 +708,7 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
                 }
             }
         });
-    };
+    }; // Instance du contrôlleur qui s'occupe d'ajouter une strate
 }).controller('ModalAddStrataInstanceCtrl', function ($scope, $route, $modalInstance, MiCorrService, arg1, StrataData) {
     $scope.route = $route;
     $scope.natures = natures;
@@ -447,6 +716,7 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.strataName;
     $scope.strataUid;
 
+    // quand l'utilisateur appuie sur ok, on créé une instance de strate, et on l'ajoute dans notre service
     $scope.ok = function () {
         var newStrata = natureFactory($scope.nature);
         newStrata.setName($scope.strataName);
@@ -458,47 +728,108 @@ angular.module('MiCorr').controller('showStrat', function ($scope, $routeParams,
     $scope.cancel = function () {
         $modalInstance.dismiss('cancel');
     };
-}).controller('ModalDelStrataCtrl', function ($scope, $modal, $log) {
+// Contrôlleur qui s'occupe de supprimer une strate dans le service
+}).controller('ModalDelStrataCtrl', function ($scope, $modal, $log, StrataData) {
     $scope.artefactName = $scope.$parent.artefactName;
+
+    //quand on supprime une strate, on se positionne sur la strate 0 et on met à jour le dessin
+    $scope.doUpdate = function () {
+        StrataData.delStrata();
+        $scope.$emit('doUpdate', 0);
+        $scope.$emit('updateDraw');
+    };
+
+    //ouverture de la fenêtre de suppression de la strate.
+    // SI on appuie sur ok alors la strate est supprimée dans le service et le dessin est mis à jour
     $scope.open = function (size) {
         var modalInstance = $modal.open({
             templateUrl: 'delStrataContent.html',
-            controller: 'ModalDelStrataInstanceCtrl',
             size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'id',
+                function($scope, $modalInstance,scopeParent,id) {
+                    $scope.ok = function() {
+
+                        scopeParent.doUpdate();
+
+                        $modalInstance.close();
+                    };
+                    $scope.cancel = function() {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                id: function(){
+                    return $scope.id; // On passe en paramètre l'id de l'élément à supprimer.
+                }
+            }
         });
-    };
-}).controller('ModalDelStrataInstanceCtrl', function ($scope, $route, $modalInstance, MiCorrService, StrataData) {
-    $scope.route = $route;
-    $scope.natures = natures;
-    $scope.nature;
-    $scope.strataName;
-    $scope.strataUid;
 
-    $scope.ok = function () {
-        $modalInstance.close();
+    };
+// Contrôlleur qui s'occupe de sauvegarder une stratigraphie
+}).controller('ModalSaveStrataCtrl', function ($scope, $route, $modal, $log, StrataData) {
+    $scope.artefactName = $scope.$parent.artefactName;
+
+     /* appelle une méthode parent pour sauvegarder la stratigraphie qui se trouve dans le service
+     * @params
+     * €returns
+     */
+    $scope.doSave = function () {
+        $scope.$emit('save');
     };
 
-    $scope.cancel = function () {
-        $modalInstance.dismiss('cancel');
+    // ouvre la fenêtre et si l'utilisateur appuie sur ok alors on sauvegarde
+    $scope.open = function (size) {
+        var modalInstance = $modal.open({
+            templateUrl: 'saveStrataContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'id',
+                function($scope, $modalInstance,scopeParent,id) {
+                    $scope.ok = function() {
+                        scopeParent.doSave();
+                        $modalInstance.close();
+                    };
+                    $scope.cancel = function() {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                id: function(){
+                    return $scope.id; // On passe en paramètre l'id de l'élément à supprimer.
+                }
+            }
+        });
+
     };
 });
 
 
-
+//Contrôlleur qui s'occupe d'afficher toutes les stratigraphies pour un artefact
 angular.module('MiCorr').controller('showArtefact', function ($scope, $location, $routeParams, MiCorrService) {
     $scope.artefactName = $routeParams.name;
 
+    // Quand on lance la page, alors il se passe une requête asynchrone qui va chercher toutes les stratigraphies
     MiCorrService.getStratigraphyByArtefact($scope.artefactName).success(function(data){
         $scope.strats = data['strats'];
     });
 });
 
+//Contrôlleur qui s'occupe d'afficher tous les artefacts
 angular.module('MiCorr').controller('listArtefacts', function ($scope, $routeParams, MiCorrService) {
+    // Quand on lance la page, alors il se passe une requête asynchrone qui va chercher tous les artefacts
     MiCorrService.getAllArtefacts().success(function(data){
         $scope.artefacts = data['artefacts'];
     });
 });
 
+// controlleur qiu s'occupe de l'ajout d'une stratigraphie
 angular.module('MiCorr').controller('ModalAddStratigraphyCtrl', function ($scope, $modal, $log) {
     $scope.artefactName = $scope.$parent.artefactName;
     $scope.open = function (size) {
@@ -512,32 +843,38 @@ angular.module('MiCorr').controller('ModalAddStratigraphyCtrl', function ($scope
             }
         });
     };
+// instance du contrôlleur qui s'occupe de l'ajout d'une stratigraphie
 }).controller('ModalAddStratigraphyInstanceCtrl', function ($scope, $route, $modalInstance, MiCorrService, artefact) {
     $scope.route = $route;
     $scope.artefactName = artefact;
     $scope.strat = '';
     $scope.ok = function () {
-        MiCorrService.stratigraphyExists($scope.strat).success(function(data) {
-            if (data['StratigraphyExists'] == false) {
-                MiCorrService.addStratigraphy($scope.artefactName, $scope.strat).success(function(data) {
-                    if (data['insertStatus'] == true){
-                        $modalInstance.close();
-                        $scope.route.reload();
-                    }
-                    else {
-                        console.log("Impossible d'ajouter la stratigraphie.");
-                        alert("Erreur d'ajout de la stratigraphie");
-                    }
-                })
-            }
-            else
-                $scope.$broadcast('addArtefact', $scope.strat);
-        });
+        if (testUserInput($scope.strat)) {
+            MiCorrService.stratigraphyExists($scope.strat).success(function (data) {
+                if (data['StratigraphyExists'] == false) { // si la stratigraphie est ok alors on peut l'ajouter
+                    MiCorrService.addStratigraphy($scope.artefactName, $scope.strat).success(function (data) {
+                        if (data['insertStatus'] == true) {
+                            $modalInstance.close();
+                            $scope.route.reload();
+                        }
+                        else {
+                            console.log("Impossible d'ajouter la stratigraphie.");
+                            alert("Erreur d'ajout de la stratigraphie");
+                        }
+                    })
+                }
+                else
+                    $scope.$broadcast('addArtefact', $scope.strat);
+            });
+        }
+        else
+            alert("Only alphanumeric characters are allowed");
     };
 
     $scope.cancel = function () {
         $modalInstance.dismiss('cancel');
     };
+//COntrôlleur des messages d'erreurs qui surviennent lors de l'ajout d'une stratigraphie
 }).controller('addStratigraphyCtrl', function ($scope) {
     $scope.alerts = [];
 
@@ -554,11 +891,25 @@ angular.module('MiCorr').controller('ModalAddStratigraphyCtrl', function ($scope
     };
 });
 
-angular.module('MiCorr').controller('mainController', function ($scope, $routeParams, MiCorrService, StrataData) {
+/* Contrôlleur très important car il est appelé une fois lors du chargement du site
+ * Ce contrôlleur est parent à chaque autres contrôlleurs de MiCorrApp
+ * Lorsqu'on appelle une page de MiCorrApp ce contrôlleur est exécuté et il fait principalement une seule chose
+ * Il va chercher la liste des charactéristiques présentes dans la base afin de les charger dans les services
+ * Attention si on accède aux détails d'une stratigraphie sans que les charactéristiques soient chargées au préalable alors il va y avoir un problème
+ * On doit avant tout accéder d'abord à la liste des artefacts ou stratigraphies avant d'aller dans les détails sinon les charactéristiques ne sont pas chargées
+*/
+angular.module('MiCorr').controller('mainController', function ($scope, $route, $routeParams, MiCorrService, StrataData) {
 
+    /* Quand le site est chargé pour la première fois le contrôlleur fait une requête asynchrone
+     * Il va chercher la liste de toutes les charactéristiques afin de les mettre dans le service (StrataData)
+     * La liste est au format json. Elle est constitué de charactéristiques classées par famille
+     * Chaque charactéristique peut avoir une sous-caractéristique et chaque sous caractéristique peut avoir une sous caractéristique
+     * Attention une sous caractéristique n'est pas liée à une famille mais à une caractéristique
+     */
     MiCorrService.getAllCharacteristic().success(function(data){
         characteristics = data;
 
+        // On commence par retrouver dans notre document chaque caractéristique et on la met dans notre service
         StrataData.setShapeFamily($scope.parseCharasteristic('shapeFamily'));
         StrataData.setWidthFamily($scope.parseCharasteristic('widthFamily'));
         StrataData.setThicknessFamily($scope.parseCharasteristic('thicknessFamily'));
@@ -585,15 +936,229 @@ angular.module('MiCorr').controller('mainController', function ($scope, $routePa
         StrataData.setInterfacetransitionFamily($scope.parseCharasteristic('interfaceTransitionFamily'));
         StrataData.setInterfaceroughnessFamily($scope.parseCharasteristic('interfaceRoughnessFamily'));
         StrataData.setInterfaceadherenceFamily($scope.parseCharasteristic('interfaceAdherenceFamily'));
+        StrataData.setCmlevelofcorrosionFamily($scope.parseCharasteristic('cmLevelOfCorrosionFamily'));
+        StrataData.setCpcompositionextensionFamily($scope.parseCharasteristic('cpCompositionExtensionFamily'));
+        StrataData.setCprimicrostructureaggregatecompositionFamily($scope.parseCharasteristic('cpriMicrostructureAggregateCompositionFamily'));
+        StrataData.setCprimicrostructureaggregatecompositionextensionFamily($scope.parseCharasteristic('cpriMicrostructureAggregateCompositionExtensionFamily'));
+
+        // on met ensuite les sous-caractéristiques et sous sous caractéristiques dans notre service
+        StrataData.setSubcpcompositionFamily($scope.getSubCharacteristicsFromFamily('cpCompositionFamily', 'sub'));
+        StrataData.setSubsubcpcompositionFamily($scope.getSubCharacteristicsFromFamily('cpCompositionFamily', 'subsub'));
+
+        StrataData.setSubcprimicrostructureFamily($scope.getSubCharacteristicsFromFamily('cpriMicrostructureFamily', 'sub'));
+        StrataData.setSubcprimicrostructureaggregatecompositionFamily($scope.getSubCharacteristicsFromFamily('cpriMicrostructureAggregateCompositionFamily', 'sub'));
+        StrataData.setSubsubcprimicrostructureaggregatecompositionFamily($scope.getSubCharacteristicsFromFamily('cpriMicrostructureAggregateCompositionFamily', 'subsub'));
+        StrataData.setSubcmcompositionFamily($scope.getSubCharacteristicsFromFamily('cmCompositionFamily', 'sub'));
+        StrataData.setSubcmLevelOfCorrosionFamily($scope.getSubCharacteristicsFromFamily('cmLevelOfCorrosionFamily', 'sub'));
+        StrataData.setSubmmicrostructureFamily($scope.getSubCharacteristicsFromFamily('mMicrostructureFamily', 'sub'));
+
     });
 
+     /* parcourt les caractéristiques de data et retourne les caractéristiques de la famille voulue
+     * @params name : nom de la famille
+     * €returns liste des caractéristiques d'une famille au format json
+     */
     $scope.parseCharasteristic = function(name) {
         for (var i = 0; i < characteristics.length; i++) {
             if (characteristics[i].family == name)
                 return characteristics[i];
         }
-    }
-    //helloa
+    };
 
+     /* parcourt les sous-caractéristiques de data et retourne les sous caractéristique pour une famille
+     * comme une sous caractéristique n'est pas liée à une famille on doit pour une famille parcourir toutes les sous-caractéristique de chaque caractéristique
+     * et retourner ces sous caractéristiques dans une liste
+     * @params family : nom de la famille
+     *         level('sub') : on cherche les sous-caractéristiques
+     *         level('subsub') : on cherche les sous-sous caractéristiques
+     * €returns liste des caractéristiques d'une famille au format Array
+     */
+    $scope.getSubCharacteristicsFromFamily = function(family, level) {
+        var subList = [];
+        var subsubList = [];
+        var list = $scope.parseCharasteristic(family);
+        list = list['characteristics'];
+        // on parcourt les caractéristiques et sous-caractéristiques pour la famille demandée
+        // on alimente ûn tableau pour les sub et subsub
+        for (var i = 0; i < list.length; i++){
+            var sub = list[i]['subcharacteristics'];
+            for (var j = 0; j < sub.length; j++) {
+                subList.push({'name' : sub[j].name});
+                var subsub = sub[j]['subcharacteristics'];
+                for (var k = 0; k < subsub.length; k++) {
+                    subsubList.push({'name' : subsub[k].name});
+                }
+            }
+
+        }
+
+        // selon ce qu'on demande on retourne l'un ou l'autre
+        if (level == "sub")
+            return subList;
+        else if (level == "subsub")
+            return subsubList;
+
+    };
+
+
+
+
+}).controller('ModalDelstratigraphyCtrl', function ($scope, $route, $modal, $log, StrataData, MiCorrService) {
+    $scope.open = function (size, strat) {
+        var modalInstance = $modal.open({
+            templateUrl: 'delStratigraphyContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'id',
+                function($scope, $modalInstance,scopeParent,id) {
+                    $scope.ok = function() {
+                        MiCorrService.deleteStratigraphy(strat).success(function(data){
+                            $route.reload();
+                        });
+                        $modalInstance.close();
+                    };
+                    $scope.cancel = function() {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                id: function(){
+                    return $scope.id; // On passe en paramètre l'id de l'élément à supprimer.
+                }
+            }
+        });
+
+    };
+}).controller('ModalAddArtefactCtrl', function ($scope, $route, $modal, $log, StrataData, MiCorrService) {
+    $scope.open = function (size) {
+        var modalInstance = $modal.open({
+            templateUrl: 'AddArtefactContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'id',
+                function($scope, $modalInstance,scopeParent,id) {
+                    $scope.artefact;
+                    $scope.ok = function() {
+                        if (testUserInput($scope.artefact)) {
+                            MiCorrService.createArtefact($scope.artefact).success(function(data){
+                                if (data['res'] == 0)
+                                    alert("This artefact already exists in database !");
+                                else {
+                                    $modalInstance.close();
+                                    $route.reload();
+                                }
+                            });
+                        }
+                        else
+                            alert("Only alphanumeric characters are allowed");
+
+                    };
+                    $scope.cancel = function() {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                id: function(){
+                    return $scope.id; // On passe en paramètre l'id de l'élément à supprimer.
+                }
+            }
+        });
+
+    };
+}).controller('ModalDelArtefactCtrl', function ($scope, $route, $modal, $log, StrataData, MiCorrService) {
+    $scope.open = function (size, artefact) {
+        $scope.artefact = artefact;
+        var modalInstance = $modal.open({
+            templateUrl: 'delArtefactContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'artefact',
+                function($scope, $modalInstance,scopeParent,artefact) {
+                    $scope.ok = function() {
+                        MiCorrService.deleteArtefact(artefact).success(function (data) {
+                            $modalInstance.close();
+                            $route.reload();
+                        });
+                    };
+                    $scope.cancel = function() {
+                        $modalInstance.dismiss('cancel');
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                artefact: function(){
+                    return $scope.artefact; // On passe en paramètre l'id de l'élément à supprimer.
+                }
+            }
+        });
+
+    };
+//contrôlleur qui s'occupe d'afficher les artefacts similaires
+}).controller('ModalShowSimilarStrataCtrl', function ($scope, $route, $modal, $log, StrataData, MiCorrService) {
+    $scope.open = function (size) {
+        var modalInstance = $modal.open({
+            templateUrl: 'showSimilarStrataContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent',
+                function($scope, $modalInstance,scopeParent) {
+                    $scope.results = "";
+                    /* A l'ouverture de la fenêtre on va appeler un service qui va chercher les artefacts similaires
+                     * Ce service prend comme paramètre la stratigraphie complète au format JSON
+                     * Il est inutile de renseigner les nom d'artefact et de stratigraphie car on compare uniquement les couches de corrosion entre elles
+                     * Une fois la requête effectuée, on ressort le résultat
+                     */
+                    MiCorrService.matchStratigraphy(encodeURIComponent(JSON.stringify(StrataData.StratasToJson("USELESS", "USELESS")))).success(function(data){
+                         $scope.results = data;
+                    });
+
+                    $scope.ok = function() {
+                        $modalInstance.close();
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                }
+            }
+        });
+
+    };
+//Contrôlleur qui va ouvrir une fenêtre modale pour exporter les dessins au format png
+//La fenêtre contient chaque dessins mais au format png et non svg
+}).controller('ModalExportStrataCtrl', function ($scope, $route, $modal, $log, StrataData, MiCorrService) {
+    $scope.open = function (size) {
+        var modalInstance = $modal.open({
+            templateUrl: 'exportStrataContent.html',
+            size: size,
+            controller: ['$scope', '$modalInstance','scopeParent', 'images',
+                function($scope, $modalInstance, scopeParent, images) {
+                    //on récupères les images (paper de raphaeljs) pour les mettre dans notre scope afin de les afficher par notre directive
+                    $scope.images = images;
+
+                    $scope.ok = function() {
+                        $modalInstance.close();
+                    };
+                }
+            ],
+            resolve: {
+                scopeParent: function() {
+                    return $scope; //On passe à la fenêtre modal une référence vers le scope parent.
+                },
+                images : function() {
+                    return StrataData.getImages();
+                }
+            }
+        });
+
+    };
 });
 

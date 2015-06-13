@@ -23,7 +23,25 @@ class MiCorrService:
         return MiCorrService.db.getAllCharacteristic()
 
     def getStratigraphyDetails(self, stratigraphy):
-        return MiCorrService.db.getStratigraphyDetails(stratigraphy);
+        return MiCorrService.db.getStratigraphyDetails(stratigraphy)
+
+    def save(self, data):
+        return MiCorrService.db.save(data)
+
+    def match(self, data):
+        return MiCorrService.db.match(data);
+
+    def deleteStratigrapy(self, stratigraphy):
+        return MiCorrService.db.deleteStratigraphy(stratigraphy)
+
+    def addArtefact(self, artefact):
+        return MiCorrService.db.addArtefact(artefact)
+
+    def delArtefact(self, artefact):
+        return MiCorrService.db.delArtefact(artefact)
+
+    def test(self):
+        return MiCorrService.db.test()
 
 
 

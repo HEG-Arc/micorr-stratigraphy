@@ -1,56 +1,66 @@
-function ImageList() {
-    this.img = [];
+/*
+ * MiCorrApp @ HE-ARC
+ *
+ * Version: 1
+ *
+ * Divers méthodes et propriétés qui sont utilisés tout au long de l'application
+ */
 
-    this.getImg = function(name) {
-        for (var i = 0; i < this.img.length; i++){
-            if (this.img[i].name == name)
-                return this.img[i];
-        }
-        return "";
-    };
-
-    this.setSize = function(name, width, height) {
-        var image = this.getImg(name);
-        image.width = width;
-        image.height = height;
-    }
-
-    this.init = function() {
-        this.img.push({'name' : 'dendrit', 'url' : '../static/micorr/images/c/dendrit.png', 'width' : 25, 'height' : 35});
-        this.img.push({'name' : 'vains', 'url' : '../static/micorr/images/c/vains.png', 'width' : 150, 'height' : 18});
-        this.img.push({'name' : 'porosity', 'url' : '../static/micorr/images/c/porosity.png', 'width' : 5, 'height' : 5});
-    };
+/* Factory qui retourne l'instance qui convient selon la nature
+ * @params nature : nom de la nature dont on veut l'instance
+ * €returns instance de la nature qui convient
+ */
+function natureFactory (nature){
+    if (nature == "cmCharacteristic" || nature == "CM")
+        return new CM();
+    else if (nature == "cpCharacteristic" || nature == "CP")
+        return new CP();
+    else if (nature == "dCharacteristic" || nature == "D")
+        return new D();
+    else if (nature == "mCharacteristic" || nature == "M")
+        return new M();
+    else if (nature == "nmmCharacteristic" || nature == "NMM")
+        return new NMM();
+    else if (nature == "pomCharacteristic" || nature == "POM")
+        return new POM();
+    else if (nature == "sCharacteristic" || nature == "S")
+        return new S();
+    else if (nature == "svCharacteristic" || nature == "SV")
+        return new SV();
 }
 
-var imgList = new ImageList();
-imgList.init();
-
-// hauteur des strates en px
+/* retourne la largeur des strates
+ * @params charactéristique de largeur
+ * €returns largeur qui convient, par défaut 500px
+ */
 function getWidths(width) {
     if (width == "largeCharacteristic")
-        return 1;
+        return 650;
     else if (width == "normalWidthCharacteristic")
-        return 0.75;
+        return 500;
     else if (width == "smallCharacteristic")
-        return 0.5;
+        return 300;
     else
-        return 0.75;
+        return 500;
 }
 
+/* Retourne la hauteur des strates
+ * @params charactéristique de hauteur
+ * €returns hauteur qui convient, par défaut 100px
+ */
 function getThicknesses(thickness) {
     if (thickness == "thickCharacteristic")
         return 150;
     else if (thickness == "normalThicknessCharacteristic")
         return 100;
     else if (thickness == "thinCharacteristic")
-        return 75;
+        return 50;
     else
         return 100;
 
 }
 
 // matreials or voids constituing the corroded artefact
-
 var natures = {"natures" : [
     {"guidc" : "cmCharacteristic", "description" : "Corroded metal", "code" : "CM"},
     {"guidc" : "cpCharacteristic", "description" : "Corroded product", "code" : "CP"},
@@ -62,6 +72,11 @@ var natures = {"natures" : [
     {"guidc" : "svCharacteristic", "description" : "Strucural void", "code" : "SV"},
 ]};
 
+/* fonction qui parcourt une liste de caractéristique et qui retourne une caractéristique si elle est trouvée en fonction du paramètre
+ * @params data : liste de caractéristiques
+ *         name : nom de la caractéristique à trouver
+ * €returns nom de la caractéristique trouvée dans la liste
+ */
 getCharacteristicByItsName = function(data, name) {
     for (var i = 0; i < data.length; i++) {
         if (data[i].name == name){
@@ -71,8 +86,39 @@ getCharacteristicByItsName = function(data, name) {
     return "";
 }
 
+/* Compare deux strates et définit si elle est identique ou pas
+ * @params deux strates
+ * €returns true = identique, false = différente
+ */
 function compareTwoStratas(s1, s2) {
     if (s1.getNatureFamily() == s2.getNatureFamily()) {
+        var s1car = s1.getJsonCharacteristics();
+        var s2car = s2.getJsonCharacteristics();
+        var s1int = s1.getJsonInterface();
+        var s2int = s2.getJsonInterface();
+
+        for (var i = 0; i < s1int.length; i++)
+            s1car.push(s1int[i]);
+        for (var i = 0; i < s2int.length; i++)
+            s2car.push(s2int[i]);
+
+        if (s1car.length != s2car.length)
+            return false;
+
+        for (var i = 0; i < s1car.length; i++) {
+            var trouve = false;
+            for (var j = 0; j < s2car.length; j++){
+                if (s1car[i].name == s2car[j].name)
+                trouve = true;
+            }
+            if (trouve == false)
+                return false;
+        }
+
+        return true;
+
+        /*
+
         var i = false;
 
         if (s1.getShapeFamily() == s2.getShapeFamily() &&
@@ -83,20 +129,31 @@ function compareTwoStratas(s1, s2) {
             s1.getInterfaceprofileFamily() == s2.getInterfaceprofileFamily())
             i = true;
 
-        return i;
+        return i;*/
     }
     else
         return false;
 }
 
-
+/* retourne un nombre aléatoire entier entre min et max, min non inclu
+ * @params min, max
+ * €returns nombre aléatoire
+ */
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
+/* Dessine des craquelures sur une strate. Utilise des courbes de béziers aléatoirement pour dessiner les lignes
+ * @params paper : surface de dessin
+ *         width : largeur
+ *         height : hauteur
+ *         nbLines : nombre de craquelures horizontales
+ *         nbCol : nombre de craquelures verticales
+ * €returns
+ */
 function drawCracking(paper, width, height, nbLines, nbCol) {
-    var nb_hoph = 8;
-    var nb_hopv = 5;
+    var nb_hoph = 8; // nombre de courbes de béziers horizontales
+    var nb_hopv = 5; // nombre de courbes de béziers verticales
     var y = height / (nbLines+1);
     //horizontal
     for (var c = 0; c < nbLines; c++) {
@@ -126,4 +183,154 @@ function drawCracking(paper, width, height, nbLines, nbCol) {
     }
 }
 
+/* Dessine les interfaces en fonction de paramètres
+ * @params paper : surface de dessin
+ *         index : position de la strate dans la stratigraphie, 0 = au début
+ *         width : largeur
+ *         height : hauteur
+ *         type : type de dessin voulu,bumpy, wavy, irregular
+ *         nb_hop : nombre de courbes de béziers voulu
+ *         bottomBackgroundColor : couleur inférieure de l'interface
+ *         topBackgroundColor : couleur supérieure de l'interface
+ * €returns
+ */
+function drawInterface(paper, index, width, height, type, nb_hop, bottomBackgroundColor, topBackgroundColor) {
+    /* Le dessin des interfaces se fait en 3 étapes
+    *  1) Tout d'abord on colorie la zone de dessin avec la couleur topBackground et sans cadre
+    *  2) on dessine la ligne d'interface avec le tableau line = []
+    *  3) on dessine la ligne d'interface accompagnée d'un polygone qui vient faire office de partie inférieure de l'interface et avec la couleur bottombackgroundcolor
+    */
+    var rect = paper.rect(0, 0, width, height).attr("stroke-width", 0); // zone de dessin sans cadre
+    rect.attr("fill", topBackgroundColor);
+    var y = height / 2;
+    var t = [];
+    var line = [];
+    var nb = nb_hop;
+    var x = 0;
+    var h_hop = width / nb;
+    var y = height / 2;
+    for (var i = 0 ; i < nb; i++) {
+        t.push('M');
+        line.push('M');
+        t.push(x);
+        line.push(x);
+        t.push(y);
+        line.push(y);
+        t.push('Q');
+        line.push('Q');
+        // on utilise les courbes de béziers pour faire des vagues
+        if (type == "wavy"){
+            t.push(x + width/nb/2);
+            line.push(x + width/nb/2);
+            if ((i % 2) == 0){
+                line.push(y + y / 4);
+                t.push(y + y / 4);
+            }
+            else{
+                line.push(y - y / 4);
+                t.push(y - y / 4);
+            }
+        }
+        else if (type == "bumpy") { // on fait des bosses avec les courbes de béziers en introduisant des hauteurs aléatoires
+            t.push(x + width/nb/2);
+            line.push(x + width/nb/2);
+            var rnd = getRandomInt(0, y);
+            if ((i % 2) == 0){
+                line.push(y + rnd);
+                t.push(y + rnd);
+            }
+            else{
+                line.push(y - rnd);
+                t.push(y - rnd);
+            }
+        }
+        else if (type == "irregular") { // on faire des formes irrégulières avec les courbes de béziers avec des valeurs aléatoires
+            var rndx = getRandomInt(0, width/nb);
+            t.push(x + rndx);
+            line.push(x + rndx);
+            var rnd = getRandomInt(-height*0.8, height*0.8);
+            line.push(y + rnd);
+            t.push(y + rnd);
+
+        }
+        line.push(x + h_hop);
+        t.push(x + h_hop);
+        line.push(y);
+        t.push(y);
+
+
+        t.push('L');
+        t.push(x + h_hop);
+        t.push(height);
+        t.push('L');
+        t.push(x);
+        t.push(height);
+
+        x += h_hop;
+    }
+
+    // Si la couleur des deux strates est noire alors la ligne d'interface est blanche
+    var strokeColor = "black";
+    if (bottomBackgroundColor == "black" && topBackgroundColor == "black")
+        strokeColor = "white";
+    paper.path(line).attr("stroke", strokeColor).attr("stroke-width", 5);
+    paper.path(t).attr("fill", bottomBackgroundColor).attr("stroke", bottomBackgroundColor);;
+
+    paper.path("M0 0L0 " + height).attr("stroke-width", 3);
+    paper.path("M" + width + " 0L" + width + " " + height).attr("stroke-width", 3);
+    // Si on est tout en haut(strate 0) alors on dessine une ligne qui ferme la boite d'interface au niveau supérieur
+    if (index == 0)
+        paper.path("M0 0L" + width + " 0").attr("stroke-width", 3);
+}
+
+/* dessine des vagues sur une zone de dessins
+ * @params paper : surface de dessin
+ *         nb_hop : nombre de courbes de béziers
+ *         nb_lines : nombre de vagues
+ *         width : largeur
+ *         height : hauteur
+ * €returns
+ */
+function drawalternatingBands(paper, nb_hop, nb_lines, width, height) {
+    var rect = paper.rect(0, 0, width, height).attr("stroke-width", 0);
+
+    var y = height / nb_lines;
+
+    for (var a = 0; a < nb_lines; a++) {
+        var t = [];
+        var nb = nb_hop;
+        var x = 0;
+        var h_hop = width / nb;
+
+        for (var i = 0 ; i < nb; i++) {
+            t.push('M');
+            t.push(x);
+            t.push(y);
+            t.push('Q');
+
+            t.push(x + width/nb/2);
+            if ((i % 2) == 0)
+                t.push(y + height / nb_lines);
+            else
+                t.push(y - height / nb_lines);
+
+            t.push(x + h_hop);
+            t.push(y);
+
+            x += h_hop;
+        }
+        y += height / nb_lines;
+        paper.path(t).attr("stroke", "grey");;
+    }
+}
+
+/* regex qui teste les valeurs entrées par l'utilisateur pour le nom des artefacts et stratigraphies
+ * @params text : nom des interfaces ou stratigraphies
+ * €returns true si ok, false si pas ok
+ */
+function testUserInput(text) {
+    var exp = "^[a-zA-Z0-9]{2,100}$";
+    var regexp = new RegExp(exp, "i");
+    return regexp.test(text);
+}
 
