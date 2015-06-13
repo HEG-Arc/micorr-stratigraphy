@@ -593,7 +593,7 @@ angular.module('MiCorr').controller('mainController', function ($scope, $routePa
                 return characteristics[i];
         }
     }
-
+    //helloa
 
 });
 
