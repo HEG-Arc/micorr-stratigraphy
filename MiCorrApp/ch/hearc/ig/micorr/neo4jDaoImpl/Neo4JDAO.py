@@ -10,6 +10,9 @@ class Neo4jDAO:
         self.graph = Graph(self.url)
         self.tx = self.graph.cypher.begin()
 
+    def begin(self):
+        self.tx = self.graph.cypher.begin()
+
     #commit des transaction. Si rien n'est précidé, autocommit
     def commit(self):
         self.tx.process()
@@ -113,17 +116,24 @@ class Neo4jDAO:
         return chars
 
     # Ajout d'une stratigraphie
-    # @params nom de l'artefact et nom de la stratigraphie
+    # @params nom de l'artefact et description de la stratigraphie de la stratigraphie
     # @returns true si ajout, false si refus d'ajout
     def addStratigraphy(self, artefact, stratigraphy):
         self.insertOk = True
+
+        cpt = 1
+        name = artefact + "_stratigraphy" + str(cpt)
+
+        while self.stratigraphyExists(name) > 0:
+            cpt = cpt + 1
+            name = artefact + "_stratigraphy" + str(cpt)
 
         if self.stratigraphyExists(stratigraphy) > 0:
             self.insertOk = False
         else:
             self.insertOk = True
-            self.graph.cypher.execute_one("CREATE(stratigraphy:Stratigraphy{uid:'" + stratigraphy + "', date:'" + time.strftime("%Y-%m-%d") + "', artefact_uid: '" + artefact + "', label:'stratigraphy'})")
-            self.graph.cypher.execute_one("MATCH (a:Artefact),(b:Stratigraphy) WHERE a.uid = '" + artefact + "' AND b.uid= '" + stratigraphy + "' CREATE (a)-[:IS_REPRESENTED_BY]->(b)")
+            self.graph.cypher.execute_one("CREATE(stratigraphy:Stratigraphy{uid:'" + name + "', date:'" + time.strftime("%Y-%m-%d") + "', artefact_uid: '" + artefact + "', label:'stratigraphy', description:'" + stratigraphy + "'})")
+            self.graph.cypher.execute_one("MATCH (a:Artefact),(b:Stratigraphy) WHERE a.uid = '" + artefact + "' AND b.uid= '" + name + "' CREATE (a)-[:IS_REPRESENTED_BY]->(b)")
 
         return self.insertOk
 
@@ -137,7 +147,7 @@ class Neo4jDAO:
     # @params
     # @returns
     def getStratigraphyByArtefact(self, artefact):
-        return self.graph.cypher.execute("MATCH (n:`Artefact`)-[:`IS_REPRESENTED_BY`]->(m) where n.uid='" + artefact + "' RETURN m.uid as name")
+        return self.graph.cypher.execute("MATCH (n:`Artefact`)-[:`IS_REPRESENTED_BY`]->(m) where n.uid='" + artefact + "' RETURN m.uid as name, m.description as description")
 
     # vérifie si une stratigraphie existe ou pas
     # @params nom de la stratigraphie
@@ -157,7 +167,7 @@ class Neo4jDAO:
     # @params nom de la stratigraphie
     # @returns
     def deleteStratigraphy(self, stratigraphy):
-        self.deleteAllStrataFromAStratigraphy(stratigraphy)
+        #self.deleteAllStrataFromAStratigraphy(stratigraphy)
         self.query = "match (a:Artefact)-[i:IS_REPRESENTED_BY]->(s:Stratigraphy) where s.uid = '" + stratigraphy + "' optional match (s)-[r]->()  delete i, r, s";
         self.graph.cypher.execute(self.query)
         return {'res' : 1}
@@ -183,6 +193,7 @@ class Neo4jDAO:
     # @returns
     def attachCharacteristicToStrata(self, strata, characteristic):
         self.query = "MATCH (a:Strata),(b) WHERE a.uid = '" + strata + "' AND b.uid= '" + characteristic + "' CREATE (a)-[r:IS_CONSTITUTED_BY]->(b)"
+        print(self.query)
         self.graph.cypher.execute(self.query)
 
     # créé une strate

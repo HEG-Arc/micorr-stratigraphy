@@ -18,9 +18,10 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
         restrict : 'EA',
         replace : true,
         transclude : true,
-        template : '<div class="svgcanvas col-md-11 text-center"><div></div><div></div></div>',
+        template : '<div class="svgcanvas col-md-11 text-center"><div></div><div title="We ask for your age only for statistical purposes."></div></div>',
         link : function(scope, element, attrs) {
-
+            var borderWidth = 8;
+            var intLineThick = 5;
             var svgInterface = element.children()[0];   // div interface
             var svgStrata    = element.children()[1];   // div strate
 
@@ -29,10 +30,18 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
 
             var width = getWidths(strat.getWidthFamily());              // largeur de la strate/interface
             var height = getThicknesses(strat.getThicknessFamily());    // hauteur de la strate
+            var widthInt = width;
 
             // si on est à notre première strate alors on clear les images dans stratadata
             if (index == 0)
                 StrataData.clearImages();
+            else { // Si on est pas dans la première strate alors on fait quelques traitements
+                var prevStrata = scope.rstratas[index-1];
+                var prevS = getWidths(prevStrata.getWidthFamily());
+                var thisS = getWidths(strat.getWidthFamily());
+                if (prevS < thisS)
+                   widthInt = prevS;
+            }
 
             // Initialisation du POISSON DISK DISTRIBUTION
             var poisson = [];
@@ -43,9 +52,9 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
             // Ici on va dessiner dans notre div qui représente les interfaces
 
             // On définit une hauteur d'interface fixe. ici 16px
-            var heightInterface = 16;
+            var heightInterface = 22;
             svgInterface.style.height = heightInterface + "px";
-            var paperInt = Raphael(svgInterface, width, heightInterface);
+            var paperInt = Raphael(svgInterface, widthInt, heightInterface);
 
             var upperInterfaceColor = "white";  // couleur de fond de la partie haute
             var lowerInterfaceColor = "white";  // couleur de fond de la partie basse
@@ -54,31 +63,49 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
             if (index > 0) {
                 if (scope.rstratas[index - 1].findDependency('colourFamily'))
                     if (scope.rstratas[index - 1].getColourFamily() != "" && typeof scope.rstratas[index - 1].getColourFamily() != "undefined")
-                        upperInterfaceColor = scope.rstratas[index - 1].getColourFamily().replace('Characteristic', '');
+                        upperInterfaceColor = returnFormattedColor(scope.rstratas[index - 1].getColourFamily());
             }
             // La couleur d'inteface du bas est la couleur de la strate
             if (strat.findDependency('colourFamily'))
                 if (strat.getColourFamily() != "" && typeof strat.getColourFamily() != "undefined")
-                    lowerInterfaceColor = strat.getColourFamily().replace('Characteristic', '');
+                    lowerInterfaceColor = returnFormattedColor(strat.getColourFamily());
+
+            var diffuse = false;
+            if (strat.findDependency('interfacetransitionFamily')) {
+                var transition = strat.getInterfacetransitionFamily();
+                if (transition == "diffuseCharacteristic")
+                    diffuse = true;
+            }
+
+            var transition = "";
+            if (strat.findDependency('interfacetransitionFamily')){
+                if (strat.getInterfacetransitionFamily() != "")
+                    transition = strat.getInterfacetransitionFamily();
+            }
 
             //si l'interface est droite alors on dessine un rectangle qu'on pose sur la moitié basse de l'interface
             if (strat.getInterfaceprofileFamily() == "straightCharacteristic"){
-                var sPath = "M0 " + heightInterface/2 + "L" + width + " " + heightInterface/2;
+                var sPath = "M0 " + heightInterface/2 + "L" + widthInt + " " + heightInterface/2;
                 if (strat.findDependency('colourFamily'))
                     if (strat.getColourFamily() != "")
-                        lowerInterfaceColor = strat.getColourFamily().replace('Characteristic', '');
+                        lowerInterfaceColor = returnFormattedColor(strat.getColourFamily());
 
-                paperInt.rect(0, 0, width, heightInterface/2).attr("fill", upperInterfaceColor).attr("stroke-width", 0);
-                paperInt.rect(0, heightInterface/2, width, heightInterface/2).attr("fill", lowerInterfaceColor).attr("stroke-width", 0);
+                paperInt.rect(0, 0, widthInt, heightInterface/2).attr("fill", upperInterfaceColor).attr("stroke-width", 0);
+                paperInt.rect(0, heightInterface/2, widthInt, heightInterface/2).attr("fill", lowerInterfaceColor).attr("stroke-width", 0);
+                // bordure extérieure et ligne centrale de l'interface
+                paperInt.path("M0 0L0 " + heightInterface + " M" + width + " " + " 0L" + widthInt + " " + heightInterface).attr("stroke-width", borderWidth);
+                paperInt.path("M0 " + heightInterface/2 + "L" + widthInt + " " + heightInterface/2).attr("stroke-width", intLineThick);
+
+
             } // dans les autres cas on dessine notre interface
             else if (strat.getInterfaceprofileFamily() == "wavyCharacteristic"){
-                drawInterface(paperInt, index, width, heightInterface, 'wavy', 50, lowerInterfaceColor, upperInterfaceColor);
+                drawInterface(paperInt, index, widthInt, heightInterface, 'wavy', 8, lowerInterfaceColor, upperInterfaceColor, borderWidth, intLineThick, diffuse, transition);
             }
             else if (strat.getInterfaceprofileFamily() == "bumpyCharacteristic"){
-                drawInterface(paperInt, index, width, heightInterface, 'bumpy', 60, lowerInterfaceColor, upperInterfaceColor);
+                drawInterface(paperInt, index, widthInt, heightInterface, 'bumpy', 20, lowerInterfaceColor, upperInterfaceColor, borderWidth, intLineThick, diffuse, transition);
             }
             else if (strat.getInterfaceprofileFamily() == "irregularCharacteristic"){
-                drawInterface(paperInt, index, width, heightInterface, 'irregular', 70, lowerInterfaceColor, upperInterfaceColor);
+                drawInterface(paperInt, index, widthInt, heightInterface, 'irregular', 30, lowerInterfaceColor, upperInterfaceColor, borderWidth, intLineThick, diffuse, transition);
             }
             else
                 svgInterface.style.height = "0px";
@@ -95,18 +122,18 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
             svgStrata.style.height = height + "px";
             var paper = Raphael(svgStrata, width, height);
             var rect = paper.rect(0, 0, width, height).attr("stroke-width", 0);
-            paper.path("M0 0L0 " + height).attr("stroke-width", 3);
-            paper.path("M" + width + " 0L" + width + " " + height).attr("stroke-width", 3);
+            paper.path("M0 0L0 " + height).attr("stroke-width", borderWidth);
+            paper.path("M" + width + " 0L" + width + " " + height).attr("stroke-width", borderWidth);
 
             // la dernière strate a une bordure basse
             if (index == scope.rstratas.length - 1)
-                paper.path("M0 " + height + "L" + width + " " + height).attr("stroke-width", 3);
+                paper.path("M0 " + height + "L" + width + " " + height).attr("stroke-width", borderWidth);
 
             // COuleur de fond du cadre de dessin
             var mainBackgroundColor = "white";
             if (strat.findDependency('colourFamily'))
                 if (strat.getColourFamily() != "" && typeof strat.getColourFamily() != "undefined")
-                    mainBackgroundColor = strat.getColourFamily().replace('Characteristic', '');
+                    mainBackgroundColor = returnFormattedColor(strat.getColourFamily());
             rect.attr("fill", mainBackgroundColor);
 
             /*
@@ -165,50 +192,42 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
 
             //subcprimicrostructure
             if (strat.findDependency('subcprimicrostructureFamily')){
-                if (strat.getSubcprimicrostructureFamily() == "eutecticPhaseNoMicrostructureCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhaseCristallineMicrostructureCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhaseIsolatedAggregateMicrostructureCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhaseScatteredAggregateMicrostructureCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhaseAlternatingBandsCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhaseHexagonalNetworkCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhasePseudomorphOfDendriticCpri" ||
-                    strat.getSubcprimicrostructureFamily() == "eutecticPhasePseudomorphOfGranularCpri"){
-                    poisson.push({'min': 40, 'max': 60, 'img': 'eutetic1', 'imgw': 80, 'imgh': 83});
-                    poisson.push({'min': 30, 'max': 50, 'img': 'eutetic2', 'imgw': 57, 'imgh': 60});
-                    poisson.push({'min': 36, 'max': 45, 'img': 'eutetic3', 'imgw': 71, 'imgh': 44});
-                    //poisson.push({'min': 9, 'max': 20, 'img': 'eutetic4', 'imgw': 9, 'imgh': 17});
-                }
-                else if (strat.getSubcprimicrostructureFamily() == "inclusionsNoMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsCristallineMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsIsolatedAggregateMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsAlternatingBandsCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsHexagonalNetworkCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsPseudomorphOfDendriticCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "inclusionsPseudomorphOfGranularCpri") {
-                        paper.image("../static/micorr/images/c/grains/GrainsGris_" + height + "x" + width + ".png", 0, 0, width, height);
-                }
-                else if (strat.getSubcprimicrostructureFamily() == "slipLinesNoMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesCristallineMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesIsolatedAggregateMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesScatteredAggregateMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesAlternatingBandsCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesHexagonalNetworkCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesPseudomorphOfDendriticCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "slipLinesPseudomorphOfGranularCpri"){
-                        paper.image("../static/micorr/images/c/grains/GrainsGris_" + height + "x" + width + ".png", 0, 0, width, height);
-                        paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
-                }
-                else if (strat.getSubcprimicrostructureFamily() == "twinLinesNoMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesCristallineMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesIsolatedAggregateMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesScatteredAggregateMicrostructureCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesAlternatingBandsCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesHexagonalNetworkCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesPseudomorphOfDendriticCpri" ||
-                        strat.getSubcprimicrostructureFamily() == "twinLinesPseudomorphOfGranularCpri") {
-                        paper.image("../static/micorr/images/c/grains/GrainsGris_" + height + "x" + width + ".png", 0, 0, width, height);
-                        paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
-                        paper.image("../static/micorr/images/c/inclusion/Inclusions_" + height + "x" + width + ".png", 0, 0, width, height);
+                var lsub = strat.getSubcprimicrostructureFamily();
+                for (var i = 0; i < lsub.length; i++) {
+                    var car = lsub[i].name;
+                    if (car == "eutecticPhaseNoMicrostructureCpri" ||
+                        car == "eutecticPhaseCristallineMicrostructureCpri" ||
+                        car == "eutecticPhaseIsolatedAggregateMicrostructureCpri" ||
+                        car == "eutecticPhaseScatteredAggregateMicrostructureCpri" ||
+                        car == "eutecticPhaseAlternatingBandsCpri" ||
+                        car == "eutecticPhaseHexagonalNetworkCpri" ||
+                        car == "eutecticPhasePseudomorphOfDendriticCpri" ||
+                        car == "eutecticPhasePseudomorphOfGranularCpri"){
+                        poisson.push({'min': 40, 'max': 60, 'img': 'eutetic1', 'imgw': 80, 'imgh': 83});
+                        poisson.push({'min': 30, 'max': 50, 'img': 'eutetic2', 'imgw': 57, 'imgh': 60});
+                        poisson.push({'min': 36, 'max': 45, 'img': 'eutetic3', 'imgw': 71, 'imgh': 44});
+                        //poisson.push({'min': 9, 'max': 20, 'img': 'eutetic4', 'imgw': 9, 'imgh': 17});
+                    }
+                    else if (car == "twinLinesNoMicrostructureCpri" ||
+                            car == "twinLinesCristallineMicrostructureCpri" ||
+                            car == "twinLinesIsolatedAggregateMicrostructureCpri" ||
+                            car == "twinLinesScatteredAggregateMicrostructureCpri" ||
+                            car == "twinLinesAlternatingBandsCpri" ||
+                            car == "twinLinesHexagonalNetworkCpri" ||
+                            car == "twinLinesPseudomorphOfDendriticCpri" ||
+                            car == "twinLinesPseudomorphOfGranularCpri"    ) {
+                            paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
+                    }
+                    else if (car == "inclusionsNoMicrostructureCpri" ||
+                            car == "inclusionsCristallineMicrostructureCpri" ||
+                            car == "inclusionsIsolatedAggregateMicrostructureCpri" ||
+                            car == "inclusionsScatteredAggregateMicrostructureCpri" ||
+                            car == "inclusionsAlternatingBandsCpri" ||
+                            car == "inclusionsHexagonalNetworkCpri" ||
+                            car == "inclusionsPseudomorphOfDendriticCpri" ||
+                            car == "inclusionsPseudomorphOfGranularCpri") {
+                            paper.image("../static/micorr/images/c/inclusion/Inclusions_" + height + "x" + width + ".png", 0, 0, width, height);
+                    }
                 }
             }
 
@@ -226,34 +245,30 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
 
             //SubmMicrostructureFamily
             if (strat.findDependency('submmicrostructureFamily')){
-                if (strat.getSubmmicrostructureFamily() == "eutecticPhaseDendritic" ||
-                        strat.getSubmmicrostructureFamily() == "eutecticPhaseGrainElongated" ||
-                        strat.getSubmmicrostructureFamily() == "eutecticPhaseGrainLarge" ||
-                        strat.getSubmmicrostructureFamily() == "eutecticPhaseGrainSmall") {
-                    poisson.push({'min': 40, 'max': 60, 'img': 'eutetic1', 'imgw': 80, 'imgh': 83});
-                    poisson.push({'min': 30, 'max': 50, 'img': 'eutetic2', 'imgw': 57, 'imgh': 60});
-                    poisson.push({'min': 36, 'max': 45, 'img': 'eutetic3', 'imgw': 71, 'imgh': 44});
-                }
-                else if (strat.getSubmmicrostructureFamily() == "twinLinesDendritic" ||
-                        strat.getSubmmicrostructureFamily() == "twinLinesGrainElongated" ||
-                        strat.getSubmmicrostructureFamily() == "twinLinesGrainLarge" ||
-                        strat.getSubmmicrostructureFamily() == "twinLinesGrainSmall") {
-                    paper.image("../static/micorr/images/c/grains/grains_" + height + "x" + width + ".png", 0, 0, width, height);
-                }
-                else if (strat.getSubmmicrostructureFamily() == "slipLinesDendritic" ||
-                        strat.getSubmmicrostructureFamily() == "slipLinesGrainElongated" ||
-                        strat.getSubmmicrostructureFamily() == "slipLinesGrainLarge" ||
-                        strat.getSubmmicrostructureFamily() == "slipLinesGrainSmall") {
-                    paper.image("../static/micorr/images/c/grains/grains_" + height + "x" + width + ".png", 0, 0, width, height);
-                    paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
-                }
-                else if (strat.getSubmmicrostructureFamily() == "inclusionsDendritic" ||
-                        strat.getSubmmicrostructureFamily() == "inclusionsGrainElongated" ||
-                        strat.getSubmmicrostructureFamily() == "inclusionsGrainLarge" ||
-                        strat.getSubmmicrostructureFamily() == "inclusionsGrainSmall") {
-                    paper.image("../static/micorr/images/c/grains/grains_" + height + "x" + width + ".png", 0, 0, width, height);
-                    paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
-                    paper.image("../static/micorr/images/c/inclusion/Inclusions_" + height + "x" + width + ".png", 0, 0, width, height);
+                var lsub = strat.getSubmmicrostructureFamily();
+                for (var i = 0; i < lsub.length; i++) {
+                    var car = lsub[i].name;
+                    if (car == "eutecticPhaseDendritic" ||
+                        car == "eutecticPhaseGrainElongated" ||
+                        car == "eutecticPhaseGrainLarge" ||
+                        car == "eutecticPhaseGrainSmall") {
+                        poisson.push({'min': 40, 'max': 60, 'img': 'eutetic1', 'imgw': 80, 'imgh': 83});
+                        poisson.push({'min': 30, 'max': 50, 'img': 'eutetic2', 'imgw': 57, 'imgh': 60});
+                        poisson.push({'min': 36, 'max': 45, 'img': 'eutetic3', 'imgw': 71, 'imgh': 44});
+                    }
+                    else if (car == "twinLinesDendritic" ||
+                        car == "twinLinesGrainElongated" ||
+                        car == "twinLinesGrainLarge" ||
+                        car == "twinLinesGrainSmall") {
+                        paper.image("../static/micorr/images/c/macles/Macles_" + height + "x" + width + ".png", 0, 0, width, height);
+                   }
+                    else if (car == "inclusionsDendritic" ||
+                            car == "inclusionsGrainElongated" ||
+                            car == "inclusionsGrainLarge" ||
+                            car == "inclusionsGrainSmall") {
+                        paper.image("../static/micorr/images/c/inclusion/Inclusions_" + height + "x" + width + ".png", 0, 0, width, height);
+                    }
+
                 }
             }
 
@@ -282,20 +297,10 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
                 paper.image("../static/micorr/images/c/vains.png", width/2 - 150/2, height/2 - 18/2, 150, 18);
             }
             else if (strat.getShapeFamily() == "dropletCharacteristic"){
-                poisson.push({'min': 4, 'max': 16, 'img': 'droplet1', 'imgw': 7, 'imgh': 7});
+                poisson.push({'min': 4, 'max': 16, 'img': 'droplet1', 'imgw': 10, 'imgh': 10});
                 poisson.push({'min': 8, 'max': 16, 'img': 'droplet2', 'imgw': 15, 'imgh': 15});
-                poisson.push({'min': 11, 'max': 22, 'img': 'droplet3', 'imgw': 21, 'imgh': 22});
+                poisson.push({'min': 11, 'max': 22, 'img': 'droplet3', 'imgw': 25, 'imgh': 25});
             }
-            else if (strat.getShapeFamily() == "pitCharacteristic") {
-                paper.image("../static/micorr/images/c/pit.png", width/2-(47/2), 0, 47, 43);
-            }
-            else if (strat.getShapeFamily() == "craterCharacteristic") {
-                paper.image("../static/micorr/images/c/crater.png", width/2-(84/2), 0, 84, 42);
-            }
-            else if (strat.getShapeFamily() == "pustuleCharacteristic"){
-                paper.image("../static/micorr/images/c/pustule.png", width/2-(81/2), height-47, 81, 47);
-            }
-
 
             // PDS render
             // On va ici parcourir les différentes images ajoutées à notre variable poisson et afficher sur notre zone de dessin ces images
@@ -310,16 +315,55 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
                 paper.image("../static/micorr/images/c/" + pds.pointList[i].t + ".png", pds.pointList[i].x-pds.pointList[i].w/2, pds.pointList[i].y-pds.pointList[i].h/2, pds.pointList[i].w, pds.pointList[i].h);
             }
 
+            // On met ces caractéristiques au dessus des autres
+            if (strat.getShapeFamily() == "pitCharacteristic") {
+                paper.image("../static/micorr/images/c/pit.png", width/2-(47/2), 0, 47, 43);
+            }
+            else if (strat.getShapeFamily() == "craterCharacteristic") {
+                paper.image("../static/micorr/images/c/crater.png", width/2-(84/2), 0, 84, 42);
+            }
+            else if (strat.getShapeFamily() == "pustuleCharacteristic"){
+                paper.image("../static/micorr/images/c/pustule.png", width/2-(81/2), height-47, 81, 47);
+            }
+
             // On push les images créé dans notre service pour les réutiliser
             StrataData.pushOneImage(paper);
 
             // On créé un événement pour que si l'utilisateur click sur une image, le formulaire se met à jour avec la strate sélectionnée
-            element.bind('click', function(){
+            // événement sur interface
+            $(element.children()[0]).bind('click', function(){
                 scope.update(index);
+                scope.setInterfaceTab(true);
             });
+            // événement sur strate
+            $(element.children()[1]).bind('click', function(){
+                scope.update(index);
+                scope.setInterfaceTab(false);
+            });
+
+            // construction du texte à afficher dans le tooltip
+            var tooltipText = [];
+            for (var i = 0; i < strat.getJsonCharacteristics().length; i++)
+                tooltipText.push(strat.getJsonCharacteristics()[i].name );
+            for (var i = 0; i < strat.getJsonInterface().length; i++)
+                tooltipText.push(strat.getJsonInterface()[i].name);
+
+            tooltipText.sort();
+
+            // on remplit la variable des caractéristique qu'on va afficher dans notre tooltip
+            var tooltipStr = "";
+            for (var i = 0; i < tooltipText.length; i++)
+                if (tooltipText[i] != "" || tooltipText[i] != "undefined")
+                    tooltipStr += tooltipText[i] + "\r\n";
+
+            element.children()[1].setAttribute("title", tooltipStr);
+            // on gére les toolstips avec jqueryui
+            $(document).tooltip();
+
 
             // Compilation de notre html pour pouvoir être interprêté par le navigateur.
             $compile(element.contents())(scope);
+
         }
     };
 /* Cette directive permet de retrouver le svg créé par raphaeljs,
@@ -353,7 +397,7 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
         restrict : 'EA',
         replace : true,
         transclude : true,
-        template : '<div class="col-md-1 text-center"></div>',
+        template : '<div class="col-md-1 text-center"><div></div><div></div></div>',
         link : function(scope, element, attrs) {
             var index = attrs.index;    // index de la strate
 
@@ -385,7 +429,17 @@ angular.module('MiCorr').directive('strata', function($compile, StrataData){
                 strata.setOrderName(strata.getShortNatureFamily() + (sameNature + 1));
 
             // On affiche le nom de la strate
-            element[0].innerText = strata.getOrderName();
+            element.children()[0].innerText = strata.getOrderName();
+
+            // on affiche les boutons pour bouger la strate
+            var btns = "";
+            if (index > 0)
+                btns += '<button ng-click="movestrataup(' + index + ')" type="button" class="btn btn-primary btn-xs"><span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></button>';
+            if (index < stratas.length - 1)
+                btns += '<button ng-click="movestratadown(' + index + ')" type="button" class="btn btn-primary btn-xs"><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></button>';
+
+            $(element.children()[1]).append(btns);
+            $compile(element.contents())(scope);
         }
     };
 });

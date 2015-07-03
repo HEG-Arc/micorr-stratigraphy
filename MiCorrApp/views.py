@@ -52,7 +52,7 @@ def getStratigraphyByArtefact(request, artefact):
     ms = MiCorrService()
     strats = {'strats' : []}
     for strat in ms.getStratigraphyByArtefact(artefact):
-        strats['strats'].append({'name' : strat.name})
+        strats['strats'].append({'name' : strat.name, 'description' : strat.description})
     return HttpResponse(json.dumps(strats), content_type='application/json')
 
 # retourne la liste de tous les artefacts

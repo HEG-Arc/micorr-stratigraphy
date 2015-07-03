@@ -83,6 +83,8 @@ angular.module('MiCorr').factory('MiCorrService', function ($http, $q) {
 
 // Contient les données sur les strates qui seront échangées entre les différents contrôlleurs
 angular.module('MiCorr').factory('StrataData', function () {
+    var rawCharacteristics = "";    // Caractéristiques retournées par le serveur au format json et non modifié
+
     var selectedStrata = 0;         // index de la strate sélectionnée par l'utilisateur
 
     var rstratas         = [];      // Liste de toutes les strates pour la stratigraphie en cours
@@ -140,6 +142,8 @@ angular.module('MiCorr').factory('StrataData', function () {
 
     var submmicrostructureFamily = [];
 
+    var submcompositionFamily = [];
+
     return {
         clear : function(){
             selectedStrata = 0;
@@ -182,6 +186,9 @@ angular.module('MiCorr').factory('StrataData', function () {
         delStrata : function(){
             var idel = parseInt(this.selectedStrata);
             rstratas.splice(idel, 1);
+            // SI on a plus de strate alors on en rajoute une nouvelle pour éviter les erreurs
+            if (rstratas.length == 0)
+                rstratas.push(natureFactory("M"));
         },
         // création d'un json contenant toute la stratigraphie au format JSON
         StratasToJson : function(artefactName, stratigraphyName) {
@@ -198,6 +205,18 @@ angular.module('MiCorr').factory('StrataData', function () {
             return temp;
         },
 
+        getRawCharacteristics : function () {
+            return this.rawCharacteristics;
+        },
+        setRawCharacteristics : function (data){
+            this.rawCharacteristics = data;
+        },
+        getSubmcompositionFamily : function() {
+            return this.submcompositionFamily;
+        },
+        setSubmcompositionFamily : function(submcompositionFamily) {
+            this.submcompositionFamily = submcompositionFamily;
+        },
         setSubmmicrostructureFamily : function(submmicrostructureFamily) {
             this.submmicrostructureFamily = submmicrostructureFamily;
         },

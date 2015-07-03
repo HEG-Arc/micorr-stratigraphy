@@ -86,6 +86,25 @@ getCharacteristicByItsName = function(data, name) {
     return "";
 }
 
+/* fonction qui parcourt une liste de caractéristique et qui retourne toutes les caractéristiques si elle sont trouvée en fonction du paramètre
+ * @params data : liste de caractéristiques
+ *         name : nom de la caractéristique à trouver
+ * €returns nom de la caractéristique trouvée dans la liste
+ */
+getCharacteristicByItsNameMulti = function(data, name) {
+    var t = [];
+
+    for (var i = 0; i < name.length; i++){
+        for (var j = 0; j < data.length; j++){
+            if (name[i].name == data[j].name){
+                t.push(data[j]);
+            }
+        }
+    }
+
+    return t;
+}
+
 /* Compare deux strates et définit si elle est identique ou pas
  * @params deux strates
  * €returns true = identique, false = différente
@@ -116,20 +135,6 @@ function compareTwoStratas(s1, s2) {
         }
 
         return true;
-
-        /*
-
-        var i = false;
-
-        if (s1.getShapeFamily() == s2.getShapeFamily() &&
-            s1.getWidthFamily() == s2.getWidthFamily() &&
-            s1.getThicknessFamily() == s2.getThicknessFamily() &&
-            s1.getContinuityFamily() == s2.getContinuityFamily() &&
-            s1.getDirectionFamily() == s2.getDirectionFamily() &&
-            s1.getInterfaceprofileFamily() == s2.getInterfaceprofileFamily())
-            i = true;
-
-        return i;*/
     }
     else
         return false;
@@ -162,7 +167,7 @@ function drawCracking(paper, width, height, nbLines, nbCol) {
         for (var i = 0; i < nb_hoph; i++){
             var x_delta_hop = x + t_hoph / 2 + getRandomInt(-30 , 30);
             var y_delta_hop = y + getRandomInt(-30 , 30);
-            paper.path(['M', x, y, 'Q', x_delta_hop, y_delta_hop, x + t_hoph, y]);
+            paper.path(['M', x, y, 'Q', x_delta_hop, y_delta_hop, x + t_hoph, y]).attr("stroke-width", 2);
             x += t_hoph;
         }
         y += height / (nbLines + 1);
@@ -176,7 +181,7 @@ function drawCracking(paper, width, height, nbLines, nbCol) {
         for (var i = 0; i < nb_hopv; i++){
             var x_delta_hop = x + getRandomInt(-30 , 30);//t_hoph / 2 + getRandomInt(-30 , 30);
             var y_delta_hop = y + t_hop_v / 2 + getRandomInt(-30 , 30);
-            paper.path(['M', x, y, 'Q', x_delta_hop, y_delta_hop, x , y + t_hop_v]);
+            paper.path(['M', x, y, 'Q', x_delta_hop, y_delta_hop, x , y + t_hop_v]).attr("stroke-width", 2);
             y += t_hop_v;
         }
         x += width / (nbCol + 1)
@@ -194,13 +199,33 @@ function drawCracking(paper, width, height, nbLines, nbCol) {
  *         topBackgroundColor : couleur supérieure de l'interface
  * €returns
  */
-function drawInterface(paper, index, width, height, type, nb_hop, bottomBackgroundColor, topBackgroundColor) {
+function drawInterface(paper, index, width, height, type, nb_hop, bottomBackgroundColor, topBackgroundColor, borderWidth, interfaceLineThickness, diffuse, transition) {
     /* Le dessin des interfaces se fait en 3 étapes
     *  1) Tout d'abord on colorie la zone de dessin avec la couleur topBackground et sans cadre
     *  2) on dessine la ligne d'interface avec le tableau line = []
     *  3) on dessine la ligne d'interface accompagnée d'un polygone qui vient faire office de partie inférieure de l'interface et avec la couleur bottombackgroundcolor
     */
+
+    // Si la couleur des deux strates est noire alors la ligne d'interface est blanche
+    var strokeColor = "black";
+    if (bottomBackgroundColor == "black" && topBackgroundColor == "black")
+        strokeColor = "white";
+
+    var bubbleTransitionSize = 4;
+
     var rect = paper.rect(0, 0, width, height).attr("stroke-width", 0); // zone de dessin sans cadre
+
+    if ((transition == "semiGradualInferiorCharacteristic"  || transition == "gradualCharacteristic") && index != 0){
+        var pds = new PoissonDiskSampler(width, height);
+        for (var i = 0; i < 50; i++)
+            pds.createPointsPerso(10, 10, 'none', 0,  0);
+        for (var i = 0; i < pds.pointList.length; i++){
+            paper.circle(pds.pointList[i].x, pds.pointList[i].y + bubbleTransitionSize, bubbleTransitionSize).attr("fill", bottomBackgroundColor);
+            //console.log("X " +  pds.pointList[i].x + " Y + " + pds.pointList[i].y);
+        }
+    }
+
+
     rect.attr("fill", topBackgroundColor);
     var y = height / 2;
     var t = [];
@@ -223,12 +248,12 @@ function drawInterface(paper, index, width, height, type, nb_hop, bottomBackgrou
             t.push(x + width/nb/2);
             line.push(x + width/nb/2);
             if ((i % 2) == 0){
-                line.push(y + y / 4);
-                t.push(y + y / 4);
+                line.push(y + y / 2);
+                t.push(y + y / 2);
             }
             else{
-                line.push(y - y / 4);
-                t.push(y - y / 4);
+                line.push(y - y / 2);
+                t.push(y - y / 2);
             }
         }
         else if (type == "bumpy") { // on fait des bosses avec les courbes de béziers en introduisant des hauteurs aléatoires
@@ -269,18 +294,36 @@ function drawInterface(paper, index, width, height, type, nb_hop, bottomBackgrou
         x += h_hop;
     }
 
-    // Si la couleur des deux strates est noire alors la ligne d'interface est blanche
-    var strokeColor = "black";
-    if (bottomBackgroundColor == "black" && topBackgroundColor == "black")
-        strokeColor = "white";
-    paper.path(line).attr("stroke", strokeColor).attr("stroke-width", 5);
+    var lineAttrs = new Array();
+    lineAttrs.push({"stroke-width" : interfaceLineThickness});
+
+    if (diffuse){
+        lineAttrs.push({"stroke-dasharray": ["."]});
+        lineAttrs.push({"stroke": "grey"});
+    }
+    paper.path(line).attr("stroke", strokeColor).attr(lineAttrs);
     paper.path(t).attr("fill", bottomBackgroundColor).attr("stroke", bottomBackgroundColor);;
 
-    paper.path("M0 0L0 " + height).attr("stroke-width", 3);
-    paper.path("M" + width + " 0L" + width + " " + height).attr("stroke-width", 3);
-    // Si on est tout en haut(strate 0) alors on dessine une ligne qui ferme la boite d'interface au niveau supérieur
+
+    // Si c'est la première interface alros la bordure extérieure commence au milieu
+    var startHeight = 0;
     if (index == 0)
-        paper.path("M0 0L" + width + " 0").attr("stroke-width", 3);
+        startHeight = height/2;
+    paper.path("M0 " + startHeight + "L0 " + height).attr("stroke-width", borderWidth);
+    paper.path("M" + width + " " + startHeight + "L" + width + " " + height).attr("stroke-width", borderWidth);
+
+
+    if (transition == "semiGradualSuperiorCharacteristic" || transition == "gradualCharacteristic"){
+        var heightBottom = height/2 - bubbleTransitionSize;
+        var pds = new PoissonDiskSampler(width, heightBottom);
+        for (var i = 0; i < 50; i++)
+            pds.createPointsPerso(10, 10, 'none', 0,  0);
+        for (var i = 0; i < pds.pointList.length; i++){
+            paper.circle(pds.pointList[i].x, pds.pointList[i].y + (height / 2), bubbleTransitionSize).attr("fill", topBackgroundColor);
+            //console.log("X " +  pds.pointList[i].x + " Y + " + pds.pointList[i].y);
+        }
+    }
+
 }
 
 /* dessine des vagues sur une zone de dessins
@@ -329,8 +372,74 @@ function drawalternatingBands(paper, nb_hop, nb_lines, width, height) {
  * €returns true si ok, false si pas ok
  */
 function testUserInput(text) {
-    var exp = "^[a-zA-Z0-9]{2,100}$";
+    var exp = "^[a-zA-Z0-9\_]{2,100}$";
     var regexp = new RegExp(exp, "i");
     return regexp.test(text);
 }
+
+/* formate le nom de la couleur en enlevant characteristic à la fin et en transformant le noir en anthracite
+ * @params couleur au format caractéristique
+ * €returns couleur formattée
+ */
+function returnFormattedColor (color) {
+    color = color.replace('Characteristic', '');
+    if (color == "black")
+        color = "#474747";
+    return color;
+}
+
+/* formate le nom de la couleur en enlevant characteristic à la fin et en transformant le noir en anthracite
+ * @params couleur au format caractéristique
+ * €returns couleur formattée
+ */
+function returnSubCharacteristicsFromParent(data, family, lvl1, lvl2) {
+    var subList = [];
+    var subsubList = [];
+    // On parcourt toutes les familles
+    for (var i = 0; i < data.length; i++){
+        if (data[i].family == family){
+            var caracts = data[i].characteristics;
+            for (var j = 0; j < caracts.length; j++){
+                if (caracts[j].name == lvl1){
+                    var caract = caracts[j];
+                    for (var k = 0; k < caract.subcharacteristics.length; k++){
+                        var subcaract = caract.subcharacteristics[k];
+                        subList.push({'name' : subcaract.name});
+
+                        if (subcaract.name == lvl2) {
+                            var subsubcaracts = subcaract.subcharacteristics;
+                            for (var l = 0; l < subsubcaracts.length; l++){
+                                var subsubcaract = subsubcaracts[l];
+                                subsubList.push({'name' : subsubcaract.name});
+                            }
+                        }
+
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    if (lvl2 == '')
+        return subList;
+    else
+        return subsubList;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

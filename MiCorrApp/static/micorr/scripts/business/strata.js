@@ -26,18 +26,18 @@
 */
 
 function Strata() {
-    this.name;
-    this.orderName;
-    this.uid;
-    this.shapeFamily;
-    this.widthFamily;
-    this.thicknessFamily;
-    this.continuityFamily;
-    this.directionFamily;
-    this.interfaceprofileFamily;
-    this.natureFamily;
-    this.natureFamilyUid;
-    this.shortNatureFamily;
+    this.name = "";
+    this.orderName = "";
+    this.uid = "";
+    this.shapeFamily = "";
+    this.widthFamily = "";
+    this.thicknessFamily = "";
+    this.continuityFamily = "";
+    this.directionFamily = "";
+    this.interfaceprofileFamily = "";
+    this.natureFamily = "";
+    this.natureFamilyUid = "";
+    this.shortNatureFamily = "";
 
     this.dependencies = new Array();
 
@@ -168,7 +168,7 @@ function Strata() {
 
 // caractéristiques des couleurs
 function ColourStrata() {
-    this.colourFamily;
+    this.colourFamily = "";
 
     this.setColourFamily = function(colourFamily){
         this.colourFamily = colourFamily;
@@ -185,7 +185,7 @@ function ColourStrata() {
 
 // caractéristique de luminosité
 function BrightnessStrata() {
-    this.brightnessFamily;
+    this.brightnessFamily = "";
 
     this.setBrightnessFamily = function(brightnessFamily){
         this.brightnessFamily = brightnessFamily;
@@ -202,7 +202,7 @@ function BrightnessStrata() {
 
 // caractéristique d'opacité
 function OpacityStrata() {
-    this.opacityFamily;
+    this.opacityFamily = "";
 
     this.getOpacityFamily = function() {
         return this.opacityFamily;
@@ -219,7 +219,7 @@ function OpacityStrata() {
 
 // caractéristique de magnétisme
 function MagnetismStrata() {
-    this.magnetismFamily;
+    this.magnetismFamily = "";
 
     this.getMagnetismFamily = function() {
         return this.magnetismFamily;
@@ -236,7 +236,7 @@ function MagnetismStrata() {
 
 // caractéristique de porosité
 function PorosityStrata() {
-    this.porosityFamily;
+    this.porosityFamily = "";
 
     this.getPorosityFamily = function(){
         return this.porosityFamily;
@@ -253,7 +253,8 @@ function PorosityStrata() {
 
 // caractéristique de microstructure pour CP
 function CpriMicrostructureStrata() {
-    this.cpriMicrostructureFamily;
+    // par défaut CP et CM n'ont pas de microstructures
+    this.cpriMicrostructureFamily = "noMicrostructureCharacteristic";
 
     this.getCpriMicrostructureFamily = function() {
         return this.cpriMicrostructureFamily;
@@ -269,7 +270,7 @@ function CpriMicrostructureStrata() {
 
 // caractéristique de microstructure pour M
 function MMicrostructureStrata() {
-    this.mmicrostructureFamily;
+    this.mmicrostructureFamily = "";
 
     this.getMmicrostructureFamily = function() {
         return this.mmicrostructureFamily;
@@ -284,9 +285,51 @@ function MMicrostructureStrata() {
     };
 }
 
+// sous caractéristique pour microstructure CP
+function SubCPRIMicrostructureStrata() {
+    this.subcprimicrostructureFamily = [];
+
+    this.setSubcprimicrostructureFamily = function(subcprimicrostructureFamily) {
+        this.subcprimicrostructureFamily = subcprimicrostructureFamily;
+    };
+
+    this.getSubcprimicrostructureFamily = function() {
+        return this.subcprimicrostructureFamily;
+    };
+
+    this.getJsonSubCpriMicrostructure = function() {
+        var t = [];
+        for (var i = 0; i < this.subcprimicrostructureFamily.length; i++) {
+            t.push({'name' : this.subcprimicrostructureFamily[i].name});
+        }
+        return t;
+    };
+}
+
+//  caractéristique d'extension  d'aggrégation de composition pour microstructure cpri
+function CpriMicrostructureAggregateCompositionExtensionStrata(){
+    this.cprimicrostructureaggregatecompositionextensionFamily = [];
+
+    this.getCprimicrostructureaggregateCompositionextensionFamily = function() {
+        return this.cprimicrostructureaggregatecompositionextensionFamily;
+    };
+
+    this.setCprimicrostructureaggregateCompositionextensionFamily = function(cprimicrostructureaggregatecompositionextensionFamily) {
+        this.cprimicrostructureaggregatecompositionextensionFamily = cprimicrostructureaggregatecompositionextensionFamily;
+    };
+
+    this.getJsonCprimicrostructureaggregateCompositionextensionFamily = function() {
+        var t = [];
+        for (var i = 0; i < this.cprimicrostructureaggregatecompositionextensionFamily.length; i++) {
+            t.push({'name' : this.cprimicrostructureaggregatecompositionextensionFamily[i].name});
+        }
+        return t;
+    };
+}
+
 // caractéristique de sous microstructure pour M
 function SubMMicrostructureStrata() {
-    this.submmicrostructureFamily;
+    this.submmicrostructureFamily = [];
 
     this.getSubmmicrostructureFamily = function() {
         return this.submmicrostructureFamily;
@@ -297,13 +340,38 @@ function SubMMicrostructureStrata() {
     };
 
     this.getJsonSubmmicrostructure = function() {
-        return {'name' : this.submmicrostructureFamily};
+        var t = [];
+        for (var i = 0; i < this.submmicrostructureFamily.length; i++) {
+            t.push({'name' : this.submmicrostructureFamily[i].name});
+        }
+        return t;
+    };
+}
+
+// caractéristique d'extension de composition pour CP
+function CpCompositionExtensionStrata() {
+    this.cpcompositionextensionFamily = [];
+
+    this.getCpcompositionextensionFamily = function (){
+        return this.cpcompositionextensionFamily;
+    };
+
+    this.setCpcompositionextensionFamily = function (cpcompositionextensionFamily){
+        this.cpcompositionextensionFamily = cpcompositionextensionFamily;
+    };
+
+    this.getJsonCpcompositionExtension = function(){
+        var t = [];
+        for (var i = 0; i < this.cpcompositionextensionFamily.length; i++) {
+            t.push({'name' : this.cpcompositionextensionFamily[i].name});
+        }
+        return t;
     };
 }
 
 // caractéristique de cohésion
 function CohesionStrata() {
-    this.cohesionFamily;
+    this.cohesionFamily = "";
 
     this.getCohesionFamily = function() {
         return this.cohesionFamily;
@@ -320,7 +388,7 @@ function CohesionStrata() {
 
 // caractéristique de dureté
 function HardnessStrata() {
-    this.hardnessFamily;
+    this.hardnessFamily = "";
 
     this.getHardnessFamily = function() {
         return this.hardnessFamily;
@@ -337,7 +405,7 @@ function HardnessStrata() {
 
 // caractéristique de craquelure
 function CrackingStrata() {
-    this.crackingFamily;
+    this.crackingFamily = "";
 
     this.getCrackingFamily = function(){
         return this.crackingFamily;
@@ -354,7 +422,7 @@ function CrackingStrata() {
 
 // caractéristique de composition pour S
 function SCompositionStrata() {
-    this.scompositionFamily;
+    this.scompositionFamily = "";
 
     this.getScompositionFamily = function() {
         return this.scompositionFamily;
@@ -371,7 +439,7 @@ function SCompositionStrata() {
 
 // caractéristique de composition pour NMM
 function NMMCompositionStrata() {
-    this.nmmcompositionFamily;
+    this.nmmcompositionFamily = "";
 
     this.getNmmCompositionFamily = function() {
         return this.nmmcompositionFamily;
@@ -388,7 +456,7 @@ function NMMCompositionStrata() {
 
 // caractéristique de composition pour D
 function DCompositionStrata () {
-    this.dcompositionFamily;
+    this.dcompositionFamily = "";
 
     this.getDcompositionFamily = function() {
         return this.dcompositionFamily;
@@ -405,7 +473,7 @@ function DCompositionStrata () {
 
 // caractéristique de composition pour POM
 function POMCompositionStrata() {
-    this.pomcompositionFamily;
+    this.pomcompositionFamily = "";
 
     this.getPomcompositionFamily = function() {
         return this.pomcompositionFamily;
@@ -422,7 +490,7 @@ function POMCompositionStrata() {
 
 // caractéristique de composition pour CP
 function CPCompositionStrata() {
-    this.cpcompositionFamily;
+    this.cpcompositionFamily = "";
 
     this.getCpcompositionFamily = function() {
         return this.cpcompositionFamily;
@@ -439,7 +507,7 @@ function CPCompositionStrata() {
 
 // caractéristique de composition pour CM
 function CMCompositionStrata() {
-    this.cmcompositionFamily;
+    this.cmcompositionFamily = "";
 
     this.getCmcompositionFamily = function() {
         return this.cmcompositionFamily;
@@ -456,7 +524,7 @@ function CMCompositionStrata() {
 
 // sous caractéristique de composition pour CM
 function SubCMCompositionStrata() {
-    this.subcmcompositionFamily;
+    this.subcmcompositionFamily = "";
 
     this.getSubCmcompositionFamily = function() {
         return this.subcmcompositionFamily;
@@ -473,7 +541,7 @@ function SubCMCompositionStrata() {
 
 // caractéristique de composition pour M
 function MCompositionStrata() {
-    this.mcompositionFamily;
+    this.mcompositionFamily = "";
 
     this.getMcompositionFamily = function() {
         return this.mcompositionFamily;
@@ -488,9 +556,26 @@ function MCompositionStrata() {
     };
 }
 
+// caractéristique de composition pour M
+function SubMCompositionStrata() {
+    this.submcompositionFamily = "";
+
+    this.getSubmcompositionFamily = function() {
+        return this.submcompositionFamily;
+    };
+
+    this.setSubmcompositionFamily = function(submcompositionFamily) {
+        this.submcompositionFamily = submcompositionFamily;
+    };
+
+    this.getJsonSubMComposition = function() {
+        return {'name' : this.submcompositionFamily};
+    };
+}
+
 // Interface de transition
 function InterfaceTransitionStrata() {
-    this.interfacetransitionFamily;
+    this.interfacetransitionFamily = "";
     this.getInterfacetransitionFamily = function() {
         return this.interfacetransitionFamily;
     };
@@ -506,7 +591,7 @@ function InterfaceTransitionStrata() {
 
 // dureté de l'interface
 function InterfaceRoughnessStrata() {
-    this.interfaceroughnessFamily;
+    this.interfaceroughnessFamily = "";
 
     this.getInterfaceroughnessFamily = function() {
         return this.interfaceroughnessFamily;
@@ -523,7 +608,7 @@ function InterfaceRoughnessStrata() {
 
 //Adhérence de l'interface
 function InterfaceAdherenceStrata() {
-    this.interfaceadherenceFamily;
+    this.interfaceadherenceFamily = "";
 
     this.getInterfaceadherenceFamily = function() {
         return this.interfaceadherenceFamily;
@@ -538,26 +623,9 @@ function InterfaceAdherenceStrata() {
     };
 }
 
-// sous caractéristique pour microstructure CP
-function SubCPRIMicrostructureStrata() {
-    this.subcprimicrostructureFamily;
-
-    this.setSubcprimicrostructureFamily = function(subcprimicrostructureFamily) {
-        this.subcprimicrostructureFamily = subcprimicrostructureFamily;
-    };
-
-    this.getSubcprimicrostructureFamily = function() {
-        return this.subcprimicrostructureFamily;
-    };
-
-    this.getJsonSubCpriMicrostructure = function() {
-        return {'name' : this.subcprimicrostructureFamily};
-    };
-}
-
 // caractéristique de niveau de corrosion pour CM
 function CMLevelOfCorrosionStrata() {
-    this.cmLevelOfCorrosionFamily;
+    this.cmLevelOfCorrosionFamily = "";
 
     this.setCmLevelOfCorrosionFamily = function(cmLevelOfCorrosionFamily) {
         this.cmLevelOfCorrosionFamily = cmLevelOfCorrosionFamily;
@@ -573,7 +641,7 @@ function CMLevelOfCorrosionStrata() {
 }
 // sous caractéristique de niveau de corrosion pour CM
 function SubCMLevelOfCorrosionStrata() {
-    this.subcmLevelOfCorrosionFamily;
+    this.subcmLevelOfCorrosionFamily = "";
 
     this.setSubCmLevelOfCorrosionFamily = function(subcmLevelOfCorrosionFamily) {
         this.subcmLevelOfCorrosionFamily = subcmLevelOfCorrosionFamily;
@@ -588,26 +656,10 @@ function SubCMLevelOfCorrosionStrata() {
     };
 }
 
-// caractéristique d'extension de composition pour CP
-function CpCompositionExtensionStrata() {
-    this.cpcompositionextensionFamily;
-
-    this.getCpcompositionextensionFamily = function (){
-        return this.cpcompositionextensionFamily;
-    };
-
-    this.setCpcompositionextensionFamily = function (cpcompositionextensionFamily){
-        this.cpcompositionextensionFamily = cpcompositionextensionFamily;
-    };
-
-    this.getJsonCpcompositionExtension = function(){
-        return {'name' : this.cpcompositionextensionFamily};
-    };
-}
 
 // caractéristique d'extension d'aggrégation de composition pour microstructure cpri
 function CpriMicrostructureAggregateCompositionStrata(){
-    this.cprimicrostructureaggregatecompositionFamily;
+    this.cprimicrostructureaggregatecompositionFamily = "";
 
     this.getCprimicrostructureaggregateCompositionFamily = function() {
         return this.cprimicrostructureaggregateCompositionFamily;
@@ -624,7 +676,7 @@ function CpriMicrostructureAggregateCompositionStrata(){
 
 // sous caractéristique  d'aggrégation de composition pour microstructure cpri
 function SubCpriMicrostructureAggregateCompositionStrata(){
-    this.subcprimicrostructureaggregatecompositionFamily;
+    this.subcprimicrostructureaggregatecompositionFamily = "";
 
     this.getSubcprimicrostructureaggregateCompositionFamily = function() {
         return this.subcprimicrostructureaggregatecompositionFamily;
@@ -641,7 +693,7 @@ function SubCpriMicrostructureAggregateCompositionStrata(){
 
 // sous sous caractéristique  d'aggrégation de composition pour microstructure cpri
 function SubSubCpriMicrostructureAggregateCompositionStrata(){
-    this.subsubcprimicrostructureaggregatecompositionFamily;
+    this.subsubcprimicrostructureaggregatecompositionFamily = "";
 
     this.getSubsubcprimicrostructureaggregateCompositionFamily = function() {
         return this.subsubcprimicrostructureaggregatecompositionFamily;
@@ -656,26 +708,9 @@ function SubSubCpriMicrostructureAggregateCompositionStrata(){
     };
 }
 
-//  caractéristique d'extension  d'aggrégation de composition pour microstructure cpri
-function CpriMicrostructureAggregateCompositionExtensionStrata(){
-    this.cprimicrostructureaggregatecompositionextensionFamily;
-
-    this.getCprimicrostructureaggregateCompositionextensionFamily = function() {
-        return this.cprimicrostructureaggregateCompositionextensionFamily;
-    };
-
-    this.setCprimicrostructureaggregateCompositionextensionFamily = function(cprimicrostructureaggregateCompositionextensionFamily) {
-        this.cprimicrostructureaggregateCompositionextensionFamily = cprimicrostructureaggregateCompositionextensionFamily;
-    };
-
-    this.getJsonCprimicrostructureaggregateCompositionextensionFamily = function() {
-        return {'name' : this.cprimicrostructureaggregateCompositionextensionFamily};
-    };
-}
-
 // sous caractéristique de composition pour CP
 function SubCpCompositionStrata() {
-    this.subcpcompositionFamily;
+    this.subcpcompositionFamily = "";
 
     this.setSubcpcompositionFamily = function(subcpcompositionFamily) {
         this.subcpcompositionFamily = subcpcompositionFamily;
@@ -692,7 +727,7 @@ function SubCpCompositionStrata() {
 
 // sous sous caractéristique de composition pour CP
 function SubSubCpCompositionStrata() {
-    this.subsubcpcompositionFamily;
+    this.subsubcpcompositionFamily = "";
 
     this.setSubsubcpcompositionFamily = function(subsubcpcompositionFamily) {
         this.subsubcpcompositionFamily = subsubcpcompositionFamily;
@@ -1027,7 +1062,6 @@ function CP() {
     CohesionStrata.call(this);
     HardnessStrata.call(this);
     CrackingStrata.call(this);
-    CPCompositionStrata.call(this);
     InterfaceTransitionStrata.call(this);
     InterfaceRoughnessStrata.call(this);
     InterfaceAdherenceStrata.call(this);
@@ -1036,6 +1070,7 @@ function CP() {
     SubCpriMicrostructureAggregateCompositionStrata.call(this);
     SubSubCpriMicrostructureAggregateCompositionStrata.call(this);
     CpriMicrostructureAggregateCompositionExtensionStrata.call(this);
+    CPCompositionStrata.call(this);
     SubCpCompositionStrata.call(this);
     SubSubCpCompositionStrata.call(this);
     SubCPRIMicrostructureStrata.call(this);
@@ -1054,7 +1089,6 @@ function CP() {
     this.dependencies.push('cohesionFamily');
     this.dependencies.push('hardnessFamily');
     this.dependencies.push('crackingFamily');
-    this.dependencies.push('cpcompositionFamily');
     this.dependencies.push('interfacetransitionFamily');
     this.dependencies.push('interfaceroughnessFamily');
     this.dependencies.push('interfaceadherenceFamily');
@@ -1063,6 +1097,7 @@ function CP() {
     this.dependencies.push('cpcompositionextensionFamily');
     this.dependencies.push('cprimicrostructureaggregatecompositionFamily');
     this.dependencies.push('cprimicrostructureaggregatecompositionextensionFamily');
+    this.dependencies.push('cpcompositionFamily');
     this.dependencies.push('subcpcompositionFamily');
     this.dependencies.push('subsubcpcompositionFamily');
     this.dependencies.push('subcprimicrostructureFamily');
@@ -1090,31 +1125,39 @@ function CP() {
             c.push(this.getJsonMagnetism());
         if (this.cpriMicrostructureFamily != "")
             c.push(this.getJsonCprimicrostructure());
-        if (this.cpcompositionFamily != "")
-            c.push(this.getJsonCPComposition());
-        if (this.cpcompositionextensionFamily != "")
-            c.push(this.getJsonCpcompositionExtension());
         if (this.cprimicrostructureaggregateCompositionFamily != "")
             c.push(this.getJsonCprimicrostructureaggregateCompositionFamily());
-        if (this.cprimicrostructureaggregateCompositionextensionFamily != "")
-            c.push(this.getJsonCprimicrostructureaggregateCompositionextensionFamily());
-        if (this.cpcompositionextensionFamily != "")
-            c.push(this.getJsonCpcompositionExtension());
+        /*if (this.cprimicrostructureaggregateCompositionextensionFamily != "")
+            c.push(this.getJsonCprimicrostructureaggregateCompositionextensionFamily());*/
         if (this.cprimicrostructureaggregatecompositionFamily != "")
             c.push(this.getJsonCprimicrostructureaggregateCompositionFamily());
-        if (this.cprimicrostructureaggregatecompositionextensionFamily != "")
-            c.push(this.getJsonCprimicrostructureaggregateCompositionextensionFamily());
+        /*if (this.cprimicrostructureaggregatecompositionextensionFamily != "")
+            c.push(this.getJsonCprimicrostructureaggregateCompositionextensionFamily());*/
+        if (this.cpcompositionFamily != "")
+            c.push(this.getJsonCPComposition());
         if (this.subcpcompositionFamily != "")
             c.push(this.getJsonSubcpcompositionFamily());
         if (this.subsubcpcompositionFamily != "")
             c.push(this.getJsonSubsubcpcompositionFamily());
-        if (this.subcprimicrostructureFamily != "")
-            c.push(this.getJsonSubCpriMicrostructure());
         if (this.subcprimicrostructureaggregatecompositionFamily != "")
             c.push(this.getJsonSubcprimicrostructureaggregateCompositionFamily());
         if (this.subsubcprimicrostructureaggregatecompositionFamily != null)
             c.push(this.getJsonSubsubcprimicrostructureaggregateCompositionFamily());
-
+        if (this.subcprimicrostructureFamily.length > 0) {
+            var q = this.getJsonSubCpriMicrostructure();
+            for (var i = 0; i < q.length; i++)
+                c.push(q[i]);
+        }
+        if (this.cpcompositionextensionFamily.length > 0) {
+            var q = this.getJsonCpcompositionExtension();
+            for (var i = 0; i < q.length; i++)
+                c.push(q[i]);
+        }
+        if (this.cprimicrostructureaggregatecompositionextensionFamily.length > 0) {
+            var q = this.getJsonCprimicrostructureaggregateCompositionextensionFamily();
+            for (var i = 0; i < q.length; i++)
+                c.push(q[i]);
+        }
         return c;
     }
 
@@ -1152,6 +1195,9 @@ function CM() {
     SubCMCompositionStrata.call(this);
     SubCMLevelOfCorrosionStrata.call(this);
     SubCPRIMicrostructureStrata.call(this);
+    CPCompositionStrata.call(this);
+    SubCpCompositionStrata.call(this);
+    SubSubCpCompositionStrata.call(this);
 
     this.natureFamily = "Corroded metal";
     this.shortNatureFamily = "CM";
@@ -1174,6 +1220,9 @@ function CM() {
     this.dependencies.push('subcmcompositionFamily');
     this.dependencies.push('subcmlevelofcorrosionFamily');
     this.dependencies.push('subcprimicrostructureFamily');
+    this.dependencies.push('cpcompositionFamily');
+    this.dependencies.push('subcpcompositionFamily');
+    this.dependencies.push('subsubcpcompositionFamily');
 
     this.getJsonCharacteristics = function() {
         var c = this.toJsonCharacteristics();
@@ -1203,8 +1252,17 @@ function CM() {
             c.push(this.getJsonSubCmcomposition());
         if (this.subcmLevelOfCorrosionFamily != "")
             c.push(this.getJsonSubCmLevelOfCorrosionFamily());
-        if (this.subcprimicrostructureFamily != "")
-            c.push(this.getJsonSubCpriMicrostructure());
+        if (this.cpcompositionFamily != "")
+            c.push(this.getJsonCPComposition());
+        if (this.subcpcompositionFamily != "")
+            c.push(this.getJsonSubcpcompositionFamily());
+        if (this.subsubcpcompositionFamily != "")
+            c.push(this.getJsonSubsubcpcompositionFamily());
+        if (this.subcprimicrostructureFamily.length > 0) {
+            var q = this.getJsonSubCpriMicrostructure();
+            for (var i = 0; i < q.length; i++)
+                c.push(q[i]);
+        }
 
         return c;
     }
@@ -1236,6 +1294,7 @@ function M() {
     HardnessStrata.call(this);
     CrackingStrata.call(this);
     MCompositionStrata.call(this);
+    SubMCompositionStrata.call(this);
     InterfaceTransitionStrata.call(this);
     InterfaceRoughnessStrata.call(this);
     InterfaceAdherenceStrata.call(this);
@@ -1259,6 +1318,7 @@ function M() {
     this.dependencies.push('interfaceroughnessFamily');
     this.dependencies.push('interfaceadherenceFamily');
     this.dependencies.push('submmicrostructureFamily');
+    this.dependencies.push('submcompositionFamily');
 
     this.getJsonCharacteristics = function() {
         var c = this.toJsonCharacteristics();
@@ -1282,9 +1342,17 @@ function M() {
             c.push(this.getJsonMmicrostructure());
         if (this.mcompositionFamily != "")
             c.push(this.getJsonMComposition());
-        if (this.submmicrostructureFamily != "")
-            c.push(this.getJsonSubmmicrostructure());
-
+        if (this.submcompositionFamily != "")
+            c.push(this.getJsonSubMComposition());
+        //if (this.submcompositionFamily != "")
+        //    c.push(this.getJsonSubMComposition());
+        /*if (this.submmicrostructureFamily != "")
+            c.push(this.getJsonSubmmicrostructure());*/
+        if (this.submmicrostructureFamily.length > 0) {
+            var q = this.getJsonSubmmicrostructure();
+            for (var i = 0; i < q.length; i++)
+                c.push(q[i]);
+        }
         return c;
     }
 

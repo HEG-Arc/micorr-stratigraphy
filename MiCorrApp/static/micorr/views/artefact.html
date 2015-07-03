@@ -48,8 +48,8 @@
             <tbody>
                 <tr ng-repeat='strat in strats'>
                     <td><strong>{{$index + 1}}</strong></td>
-                    <td><a href='#/artefact/{{artefactName}}/{{strat.name}}/'>{{strat.name}}</a></td>
-                    <td class="text-center"><a href='#/artefact/{{artefactName}}/{{strat.name}}/'><span class="glyphicon glyphicon glyphicon-pencil" aria-hidden="true"></span></a></td>
+                    <td><a href='#/artefact/{{artefactName}}/{{strat.name}}/{{strat.description}}'>{{strat.description}}</a></td>
+                    <td class="text-center"><a href='#/artefact/{{artefactName}}/{{strat.name}}/{{strat.description}}'><span class="glyphicon glyphicon glyphicon-pencil" aria-hidden="true"></span></a></td>
                     <td class="text-center">
                         <div ng-controller="ModalDelstratigraphyCtrl">
                             <script type="text/ng-template" id="delStratigraphyContent.html">
